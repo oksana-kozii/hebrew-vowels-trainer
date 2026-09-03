@@ -1,0 +1,466 @@
+[
+  {
+    "id": "001",
+    "picture": "pic01.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Kamatz gadol",
+      "uk": "камац-ґадоль",
+      "ru": "камац-гадол"
+    },
+    "sound": {
+      "en": "[a]",
+      "uk": "А",
+      "ru": "А"
+    }
+  },
+  {
+    "id": "002",
+    "picture": "pic15.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Kamatz malei",
+      "uk": "камац-мале",
+      "ru": "камац-мале"
+    },
+    "sound": {
+      "en": "[a]",
+      "uk": "А",
+      "ru": "А"
+    }
+  },
+  {
+    "id": "003",
+    "picture": "pic16.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Kamatz malei",
+      "uk": "камац-мале",
+      "ru": "камац-мале"
+    },
+    "sound": {
+      "en": "[a]",
+      "uk": "А",
+      "ru": "А"
+    }
+  },
+  {
+    "id": "004",
+    "picture": "pic29.svg",
+    "rare": true,
+    "level": 2,
+    "name": {
+      "en": "Reduced kamatz",
+      "uk": "зменшений камац",
+      "ru": "краткий камац"
+    },
+    "sound": {
+      "en": "[a]",
+      "uk": "А",
+      "ru": "А"
+    }
+  },
+  {
+    "id": "005",
+    "picture": "pic02.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Patach",
+      "uk": "патах",
+      "ru": "патах"
+    },
+    "sound": {
+      "en": "[a]",
+      "uk": "А",
+      "ru": "А"
+    }
+  },
+  {
+    "id": "006",
+    "picture": "pic18.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Patach malei",
+      "uk": "патах-малей",
+      "ru": "патах-мале"
+    },
+    "sound": {
+      "en": "[a]",
+      "uk": "А",
+      "ru": "А"
+    }
+  },
+  {
+    "id": "007",
+    "picture": "pic17.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Patach malei",
+      "uk": "патах-малей",
+      "ru": "патах-мале"
+    },
+    "sound": {
+      "en": "[a]",
+      "uk": "А",
+      "ru": "А"
+    }
+  },
+  {
+    "id": "008",
+    "picture": "pic03.svg",
+    "rare": true,
+    "level": 1,
+    "name": {
+      "en": "Reduced patach",
+      "uk": "зменшений патах",
+      "ru": "краткий патах"
+    },
+    "sound": {
+      "en": "[a]",
+      "uk": "А",
+      "ru": "А"
+    }
+  },
+  {
+    "id": "009",
+    "picture": "pic13.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Tsere",
+      "uk": "цейре",
+      "ru": "цере"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "010",
+    "picture": "pic21.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Tsere malei",
+      "uk": "цейре малей",
+      "ru": "цере-мале"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "011",
+    "picture": "pic19.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Tsere malei",
+      "uk": "цейре малей",
+      "ru": "цере-мале"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "012",
+    "picture": "pic20.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Tsere malei",
+      "uk": "цейре малей",
+      "ru": "цере-мале"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "013",
+    "picture": "pic06.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Segol",
+      "uk": "сеґоль",
+      "ru": "сегол"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "014",
+    "picture": "pic22.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Segol malei",
+      "uk": "сеґоль-малей",
+      "ru": "сегол-мале"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "015",
+    "picture": "pic23.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Segol malei",
+      "uk": "сеґоль-малей",
+      "ru": "сегол-мале"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "016",
+    "picture": "pic24.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Segol malei",
+      "uk": "сеґоль-малей",
+      "ru": "сегол-мале"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "017",
+    "picture": "pic05.svg",
+    "rare": true,
+    "level": 2,
+    "name": {
+      "en": "Reduced segol",
+      "uk": "зменшений сеґоль",
+      "ru": "краткий сегол"
+    },
+    "sound": {
+      "en": "[e̞]",
+      "uk": "Е",
+      "ru": "Э"
+    }
+  },
+  {
+    "id": "018",
+    "picture": "pic07.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Hiriq",
+      "uk": "хірік",
+      "ru": "хирик"
+    },
+    "sound": {
+      "en": "[i]",
+      "uk": "І",
+      "ru": "И"
+    }
+  },
+  {
+    "id": "019",
+    "picture": "pic08.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Hiriq malei",
+      "uk": "хірік-малей",
+      "ru": "хирик-мале"
+    },
+    "sound": {
+      "en": "[i]",
+      "uk": "І",
+      "ru": "И"
+    }
+  },
+  {
+    "id": "020",
+    "picture": "pic09.svg",
+    "rare": true,
+    "level": 2,
+    "name": {
+      "en": "Hiriq (?)",
+      "uk": "хірік (?)",
+      "ru": "хирик (?)"
+    },
+    "sound": {
+      "en": "[i]",
+      "uk": "І",
+      "ru": "И"
+    }
+  },
+  {
+    "id": "021",
+    "picture": "pic10.svg",
+    "rare": true,
+    "level": 1,
+    "name": {
+      "en": "Holam",
+      "uk": "холам",
+      "ru": "холам"
+    },
+    "sound": {
+      "en": "[o̞]",
+      "uk": "О",
+      "ru": "О"
+    }
+  },
+  {
+    "id": "022",
+    "picture": "pic11.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Holam malei",
+      "uk": "холам-мале",
+      "ru": "холам-мале"
+    },
+    "sound": {
+      "en": "[o̞]",
+      "uk": "О",
+      "ru": "О"
+    }
+  },
+  {
+    "id": "023",
+    "picture": "pic26.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Holam malei",
+      "uk": "холам-мале",
+      "ru": "холам-мале"
+    },
+    "sound": {
+      "en": "[o̞]",
+      "uk": "О",
+      "ru": "О"
+    }
+  },
+  {
+    "id": "024",
+    "picture": "pic25.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Holam malei",
+      "uk": "холам-мале",
+      "ru": "холам-мале"
+    },
+    "sound": {
+      "en": "[o̞]",
+      "uk": "О",
+      "ru": "О"
+    }
+  },
+  {
+    "id": "025",
+    "picture": "pic12.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Shuruk",
+      "uk": "шурук",
+      "ru": "шурук"
+    },
+    "sound": {
+      "en": "[u]",
+      "uk": "У",
+      "ru": "У"
+    }
+  },
+  {
+    "id": "026",
+    "picture": "pic28.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Shuruk",
+      "uk": "шурук",
+      "ru": "шурук"
+    },
+    "sound": {
+      "en": "[u]",
+      "uk": "У",
+      "ru": "У"
+    }
+  },
+  {
+    "id": "027",
+    "picture": "pic27.svg",
+    "rare": false,
+    "level": 2,
+    "name": {
+      "en": "Shuruk",
+      "uk": "шурук",
+      "ru": "шурук"
+    },
+    "sound": {
+      "en": "[u]",
+      "uk": "У",
+      "ru": "У"
+    }
+  },
+  {
+    "id": "028",
+    "picture": "pic14.svg",
+    "rare": true,
+    "level": 1,
+    "name": {
+      "en": "Kubutz",
+      "uk": "кубуц",
+      "ru": "куббуц"
+    },
+    "sound": {
+      "en": "[u]",
+      "uk": "У",
+      "ru": "У"
+    }
+  },
+  {
+    "id": "029",
+    "picture": "pic04.svg",
+    "rare": false,
+    "level": 1,
+    "name": {
+      "en": "Shva",
+      "uk": "шва",
+      "ru": "шва"
+    },
+    "sound": {
+      "en": "[e̞] or no sound",
+      "uk": "Е або без звука",
+      "ru": "Э или без звука"
+    }
+  }
+]
