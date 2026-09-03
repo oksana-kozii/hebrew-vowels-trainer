@@ -1,7 +1,92 @@
 {
+  "app_title": {
+    "en": "Nekudot",
+    "uk": "Знаки Оголосу",
+    "ru": "Огласовки"
+  },
+  "language_label": {
+    "en": "Language",
+    "uk": "Мова",
+    "ru": "Язык"
+  },
+  "lang_option_en": {
+    "en": "English",
+    "uk": "English",
+    "ru": "English"
+  },
+  "lang_option_uk": {
+    "en": "Українська",
+    "uk": "Українська",
+    "ru": "Українська"
+  },
+  "lang_option_ru": {
+    "en": "Русский",
+    "uk": "Русский",
+    "ru": "Русский"
+  },
+  "difficulty_label": {
+    "en": "Difficulty",
+    "uk": "Складність",
+    "ru": "Сложность"
+  },
+  "difficulty_1": {
+    "en": "Level 1",
+    "uk": "Рівень 1",
+    "ru": "Уровень 1"
+  },
+  "difficulty_1_2": {
+    "en": "Levels 1–2",
+    "uk": "Рівні 1–2",
+    "ru": "Уровни 1–2"
+  },
+  "reveal_prompt": {
+    "en": "Tap the card to reveal the answer",
+    "uk": "Натисніть на картку, щоб побачити відповідь",
+    "ru": "Нажмите на карточку, чтобы увидеть ответ"
+  },
+  "card_position": {
+    "en": "Card {n} / {m}",
+    "uk": "Картка {n} / {m}",
+    "ru": "Карточка {n} / {m}"
+  },
   "badge_rare": {
     "en": "rare",
     "uk": "Рідковживано",
     "ru": "реже используется"
+  },
+  "progress_viewed": {
+    "en": "Viewed: {seen} of {total} ({percent}%)",
+    "uk": "Переглянуто: {seen} з {total} ({percent}%)",
+    "ru": "Просмотрено: {seen} из {total} ({percent}%)"
+  },
+  "nav_prev": {
+    "en": "Previous",
+    "uk": "Попередня",
+    "ru": "Предыдущая"
+  },
+  "nav_next": {
+    "en": "Next",
+    "uk": "Наступна",
+    "ru": "Следующая"
+  },
+  "mode_shuffle": {
+    "en": "Shuffle",
+    "uk": "Перемішати",
+    "ru": "Вразброс"
+  },
+  "mode_inorder": {
+    "en": "In order",
+    "uk": "Послідовно",
+    "ru": "По порядку"
+  },
+  "filter_all": {
+    "en": "All",
+    "uk": "Всі",
+    "ru": "Все"
+  },
+  "empty_state": {
+    "en": "No cards match — adjust filters",
+    "uk": "За цими фільтрами нічого не знайдено. Спробуйте змінити налаштування",
+    "ru": "Нет карточек по фильтру — измените фильтры"
   }
 }
