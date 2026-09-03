@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nekudot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- The whole app lives in one centered column. -->
+  <main class="app">
+
+    <!--
+      HEADER — identifies the app.
+      The Level menu (top-left) and language menu (top-right) arrive in later
+      slices; the tap-hint arrives with the reveal it describes (Slice 2).
+    -->
+    <header class="app-header">
+      <h1 class="app-title" data-string="app_title">Nekudot</h1>
+    </header>
+
+    <!--
+      THE CARD — pictogram + position for now.
+      The revealed answer, the rare badge, and the progress bar are later slices.
+      The empty src/alt are filled by app.js once the data has loaded.
+    -->
+    <section class="card" id="card">
+      <div class="card-figure">
+        <img class="pictogram" id="pictogram" src="" alt="" />
+      </div>
+      <p class="card-position" id="card-position"></p>
+    </section>
+
+    <!-- Shown only if the data can't load, so a failure is never a blank screen. -->
+    <p class="load-error" id="load-error" hidden></p>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
