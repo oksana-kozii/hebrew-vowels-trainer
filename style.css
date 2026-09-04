@@ -11,7 +11,12 @@
   --muted:        #8a94a6;  /* light grey: secondary text (card N / N) */
   --accent-start: #4a83f0;  /* blue   — primary accent (used Slice 2+) */
   --accent-end:   #5a5fe0;  /* indigo — primary accent (used Slice 2+) */
-  --card-shadow:  0 10px 30px rgba(30, 43, 77, 0.10);
+  /* Two layered shadows -- a tight dark one close to the card, a soft wide
+     one further out. This pairing is what reads as "lifted" (elevation)
+     instead of flat; one shadow alone looks pasted-on. */
+  --card-shadow:
+    0 2px 5px rgba(30, 43, 77, 0.10),
+    0 22px 48px rgba(30, 43, 77, 0.16);
   --radius:       22px;
 }
 
@@ -24,15 +29,18 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* One centered column, sized to sit comfortably on a phone. */
+/* One centered column, sized to sit comfortably on a phone.
+   More top padding settles the card lower on the screen; more side
+   padding is the gutter -- guaranteed clear space so the shadow has
+   room to show and the card never crowds the screen edge. */
 .app {
   max-width: 480px;
   margin: 0 auto;
-  padding: 24px 18px 40px;
+  padding: 48px 26px 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
 }
 
 /* Header — just the title in Slice 1. */
@@ -51,7 +59,7 @@ html, body {
 /* The card: a square (1:1), soft-shadowed white panel — the old card shape. */
 .card {
   width: 100%;
-  max-width: 380px;
+  max-width: 340px;
   aspect-ratio: 1 / 1;
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -71,9 +79,13 @@ html, body {
 }
 
 .pictogram {
-  max-width: 62%;
-  max-height: 62%;
-  object-fit: contain;     /* scale to fit; never distort the mark */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;     /* scale to fit the frame; never distort the mark.
+                               No extra shrink here -- the mark's own padding
+                               (baked into the SVG canvas) is what creates the
+                               "moderate size" look; the card's padding above
+                               is the only other margin at play. */
 }
 
 /* "Card N / N" — small and light, at the card's foot. */
