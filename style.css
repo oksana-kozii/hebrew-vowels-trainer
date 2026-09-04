@@ -1,7 +1,10 @@
 /* ------------------------------------------------------------------ *
- * Nekudot — appearance (Slice 1)
+ * Nekudot — appearance (Slice 2)
  * The calm, near-monochrome look carried from the old app (V9):
  * light-grey page, soft-shadowed white card, blue -> indigo accent.
+ * Slice 2 adds: the tap-hint, the progress bar, the revealed name/sound
+ * (a fade-in layer over the card), and the buttons below the card.
+ * The Slice 1 card values that were verified on the phone are unchanged.
  * ------------------------------------------------------------------ */
 
 :root {
@@ -9,8 +12,10 @@
   --card-bg:      #ffffff;  /* the white card                          */
   --ink:          #1e2b4d;  /* dark navy: the title                    */
   --muted:        #8a94a6;  /* light grey: secondary text (card N / N) */
-  --accent-start: #4a83f0;  /* blue   — primary accent (used Slice 2+) */
-  --accent-end:   #5a5fe0;  /* indigo — primary accent (used Slice 2+) */
+  --accent-start: #4a83f0;  /* blue   — primary accent                 */
+  --accent-end:   #5a5fe0;  /* indigo — primary accent                 */
+  --track:        #dfe3ea;  /* the empty part of the progress bar      */
+  --segment-bg:   #e4e8f0;  /* the trough behind the mode toggle       */
   /* Two layered shadows -- a tight dark one close to the card, a soft wide
      one further out. This pairing is what reads as "lifted" (elevation)
      instead of flat; one shadow alone looks pasted-on. */
@@ -31,9 +36,10 @@ html, body {
 
 /* One centered column, sized to sit comfortably on a phone.
    min-height + justify-content:center vertically centers the whole
-   group (title + card + position line) within the full screen height --
-   this holds correctly on any phone, rather than a fixed top-padding
-   number tuned to one screen and wrong on the next. */
+   group (title + progress + card + controls) within the full screen
+   height. NOTE (Slice 2 phone-check): the column is taller now than in
+   Slice 1. If the controls ever fall off the bottom on a small screen,
+   switch justify-content to flex-start -- a one-line change. */
 .app {
   max-width: 480px;
   min-height: 100vh;
@@ -46,7 +52,7 @@ html, body {
   gap: 24px;
 }
 
-/* Header — just the title in Slice 1. */
+/* Header — the title and, beneath it, the tap-hint. */
 .app-header {
   width: 100%;
   text-align: center;
@@ -59,7 +65,48 @@ html, body {
   letter-spacing: 0.01em;
 }
 
-/* The card: a square (1:1), soft-shadowed white panel — the old card shape. */
+/* The tap-hint (Signifier): the cue that the card responds to a tap. */
+.tap-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* -------- Progress: a bar that fills to the percentage, plus a line. -------- */
+.progress {
+  width: 100%;
+  max-width: 344px;          /* line up with the card's width */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--track);
+  border-radius: 999px;
+  overflow: hidden;          /* keep the fill inside the rounded ends */
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;                 /* the real width is set by app.js */
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  transition: width 0.25s ease;   /* the bar glides as it grows */
+}
+
+.progress-line {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* -------- The card -------- */
+/* A square (1:1), soft-shadowed white panel — the old card shape.
+   position:relative makes it the anchor for the revealed overlays. */
 .card {
   width: 100%;
   max-width: 344px;
@@ -70,6 +117,10 @@ html, body {
   padding: 22px;
   display: flex;
   flex-direction: column;
+  position: relative;        /* anchor for the .card-name / .card-sound overlays */
+  cursor: pointer;           /* the whole card is tappable */
+  user-select: none;         /* a tap shouldn't select the card's text */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* The pictogram sits centered and contained, with transparent padding around it. */
@@ -99,12 +150,136 @@ html, body {
   transform-origin: center;
 }
 
+/* -------- The revealed answer: a fade-in layer OVER the card. --------
+   Both start invisible (opacity 0) and fade to opacity 1 when the card
+   gets .is-revealed. Because they are positioned over the card (not in
+   the column), showing them never moves the pictogram -- "reveal in
+   place, nothing shifts." pointer-events:none lets a tap fall through
+   the text to the card beneath it.
+   The exact offsets below are the first guess; they are the values to
+   eyeball on the phone (does the name clear the top of the mark? does
+   the sound sit beneath the mark and clear the "card N / N" line?). */
+.card-name {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  right: 22px;              /* a long name wraps instead of hitting the edge */
+  margin: 0;
+  text-align: left;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.card-sound {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 44px;            /* sits just above the "card N / N" line */
+  margin: 0;
+  text-align: center;
+  color: var(--ink);
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+/* One switch reveals both. */
+.card.is-revealed .card-name,
+.card.is-revealed .card-sound {
+  opacity: 1;
+}
+
 /* "Card N / N" — small and light, at the card's foot. */
 .card-position {
   margin: 0;
   text-align: center;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+/* -------- Controls below the card -------- */
+.controls {
+  width: 100%;
+  max-width: 344px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Prev / Next: two equal primary buttons. */
+.stepper {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(30, 43, 77, 0.18);
+  /* the button micro-interaction carried from V9: a small lift + shadow */
+  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(30, 43, 77, 0.22);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(30, 43, 77, 0.18);
+}
+
+/* At the ends of the deck, the button with nowhere to go is greyed and inert. */
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Study-mode toggle: two segments in a trough; the active one is filled. */
+.mode {
+  display: flex;
+  background: var(--segment-bg);
+  border-radius: 14px;
+  padding: 4px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 9px 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mode-btn.is-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  box-shadow: 0 1px 4px rgba(30, 43, 77, 0.20);
 }
 
 /* Visible only if the data fails to load. */
