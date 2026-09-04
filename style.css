@@ -30,16 +30,19 @@ html, body {
 }
 
 /* One centered column, sized to sit comfortably on a phone.
-   More top padding settles the card lower on the screen; more side
-   padding is the gutter -- guaranteed clear space so the shadow has
-   room to show and the card never crowds the screen edge. */
+   min-height + justify-content:center vertically centers the whole
+   group (title + card + position line) within the full screen height --
+   this holds correctly on any phone, rather than a fixed top-padding
+   number tuned to one screen and wrong on the next. */
 .app {
   max-width: 480px;
+  min-height: 100vh;
   margin: 0 auto;
-  padding: 48px 26px 40px;
+  padding: 32px 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 24px;
 }
 
@@ -59,7 +62,7 @@ html, body {
 /* The card: a square (1:1), soft-shadowed white panel — the old card shape. */
 .card {
   width: 100%;
-  max-width: 340px;
+  max-width: 344px;
   aspect-ratio: 1 / 1;
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -76,16 +79,24 @@ html, body {
   align-items: center;
   justify-content: center;
   min-height: 0;            /* lets the image shrink to fit inside the flex column */
+  overflow: hidden;         /* the "window" -- anything the zoom pushes past
+                                this box's edge is simply cropped away */
 }
 
 .pictogram {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;     /* scale to fit the frame; never distort the mark.
-                               No extra shrink here -- the mark's own padding
-                               (baked into the SVG canvas) is what creates the
-                               "moderate size" look; the card's padding above
-                               is the only other margin at play. */
+  object-fit: contain;     /* first, fit the whole SVG canvas -- mark plus its
+                               own built-in padding -- inside the frame */
+  transform: scale(1.25);  /* then zoom in 25%, centered. This crops evenly
+                               into the SVG's own padding on all sides --
+                               enlarging the mark without touching the 29
+                               asset files. Uniform across every card, so a
+                               mark with wider padding shrinks by the same
+                               ratio as one with tighter padding; a mark
+                               already close to its own edges is the one to
+                               watch for clipping. */
+  transform-origin: center;
 }
 
 /* "Card N / N" — small and light, at the card's foot. */

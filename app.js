@@ -20,7 +20,11 @@ const state = {
   groups: [],           // filled from groups.json (not shown until the filter slice)
   uiStrings: {},        // filled from ui-strings.json
   lang: CONFIG.defaultLang,
-  index: 0              // which card is showing (0 = the first card)
+  index: 26             // TEMP for this check: array index 26 = card 027 (Shuruk,
+                         // pic27.svg) -- a busier mark, to test the new zoom
+                         // against something other than a single centered square.
+                         // Revert to 0 once confirmed (or leave for Slice 2, which
+                         // makes this a non-issue by adding real navigation).
 };
 
 /* --- Start here: load the data, then draw the first card. --- */
