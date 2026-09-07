@@ -191,6 +191,7 @@ function renderCard() {
   // the instant the reveal fades it in.
   document.getElementById('card-name').textContent = card.name[state.lang];
   document.getElementById('card-sound').textContent = card.sound[state.lang];
+  fitSound();   // shrink the sound letter if this string wraps to two lines
 
   document.getElementById('card').classList.toggle('is-revealed', state.revealed);
 
@@ -198,6 +199,21 @@ function renderCard() {
     .replace('{n}', String(state.position + 1))
     .replace('{m}', String(state.order.length));
   document.getElementById('card-position').textContent = position;
+}
+
+/* The two-line rule: measure the sound letter at full size; if it has
+   wrapped onto a second line (a long string like Shva), add .is-two-line
+   so it shrinks. Short single-glyph sounds never trip it, so they keep the
+   full 3.4rem cap. Re-run on every render and on resize (orientation). */
+function fitSound() {
+  const el = document.getElementById('card-sound');
+  if (!el) return;
+  el.classList.remove('is-two-line');                 // measure at full size
+  const fontSize = parseFloat(getComputedStyle(el).fontSize);
+  // Height taller than ~1.5 lines (line-height 1.1) means it wrapped.
+  if (el.scrollHeight > fontSize * 1.1 * 1.5) {
+    el.classList.add('is-two-line');
+  }
 }
 
 function renderProgress() {
@@ -238,6 +254,9 @@ function attachEvents() {
     if (e.key === 'ArrowRight') goNext();
     else if (e.key === 'ArrowLeft') goPrev();
   });
+
+  // Card width can change (orientation) — re-check whether the sound wraps.
+  window.addEventListener('resize', fitSound);
 }
 
 function showLoadError(err) {
