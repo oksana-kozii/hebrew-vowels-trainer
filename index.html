@@ -11,11 +11,9 @@
   <main class="app">
 
     <!--
-      HEADER — the title identifies the app; the tap-hint (the
-      "Signifier") tells you the card is tappable. It arrives now, in
-      Slice 2, because there is finally a real behaviour for it to describe.
-      The corner controls (Level ▾ top-left, language ☰ top-right) come in
-      later slices.
+      HEADER — the title identifies the app; the tap-hint (the "Signifier")
+      tells you the card is tappable. Corner controls (Level ▾ left,
+      language ☰ right) arrive in later slices.
     -->
     <header class="app-header">
       <h1 class="app-title" data-string="app_title">Nekudot</h1>
@@ -23,9 +21,9 @@
     </header>
 
     <!--
-      PROGRESS — how much of the current deck has been seen. Sits above
+      PROGRESS — how much of the current pass has been seen. Sits above
       the card. A bar that fills to the percentage, plus a plain line.
-      Both are filled by app.js and recompute after every move.
+      Resets at the start of each new pass (a new lap, or a mode switch).
     -->
     <section class="progress" id="progress">
       <div class="progress-track">
@@ -36,13 +34,9 @@
 
     <!--
       THE CARD — tap anywhere on it to reveal / hide the answer.
-      The revealed NAME (top-left) and SOUND (beneath the mark) are a
-      separate layer: they are always in the page but invisible, and only
-      fade in on tap. They sit *over* the card rather than in the column,
-      so revealing them never nudges the pictogram (the mark you already
-      signed off keeps its size). The rare badge and progress bar for the
-      revealed state come in later slices. The empty src/alt are filled by
-      app.js once the data has loaded.
+      The revealed NAME (top-left) and SOUND (lower band, beneath the mark)
+      are a separate layer: always present, invisible until reveal, faded
+      in so the pictogram never moves. The rare badge is a later slice.
     -->
     <section class="card" id="card">
       <p class="card-name" id="card-name"></p>
@@ -54,18 +48,27 @@
     </section>
 
     <!--
-      CONTROLS — below the card, never on it. A tap on the card only ever
-      reveals; MOVING through the deck is these buttons' job (this is the
-      log-40 split: tap does one thing, Next does the other).
+      CONTROLS — below the card, never on it. Previous / Next step through
+      the deck and WRAP at the ends (they never disable). The mode control
+      is a sliding switch: the pill glides to the chosen side and a check
+      confirms it — before "In order", after "Shuffle".
     -->
     <nav class="controls">
       <div class="stepper">
         <button class="btn" id="btn-prev" data-string="nav_prev">Previous</button>
         <button class="btn" id="btn-next" data-string="nav_next">Next</button>
       </div>
+
       <div class="mode" role="group" aria-label="Study mode">
-        <button class="mode-btn" id="mode-inorder" data-string="mode_inorder">In order</button>
-        <button class="mode-btn" id="mode-shuffle" data-string="mode_shuffle">Shuffle</button>
+        <span class="mode-thumb" aria-hidden="true"></span>
+        <button class="mode-opt" id="mode-inorder">
+          <span class="mode-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+          <span data-string="mode_inorder">In order</span>
+        </button>
+        <button class="mode-opt" id="mode-shuffle">
+          <span data-string="mode_shuffle">Shuffle</span>
+          <span class="mode-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        </button>
       </div>
     </nav>
 

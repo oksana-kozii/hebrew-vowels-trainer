@@ -1,10 +1,10 @@
 /* ------------------------------------------------------------------ *
- * Nekudot — appearance (Slice 2)
- * The calm, near-monochrome look carried from the old app (V9):
- * light-grey page, soft-shadowed white card, blue -> indigo accent.
- * Slice 2 adds: the tap-hint, the progress bar, the revealed name/sound
- * (a fade-in layer over the card), and the buttons below the card.
- * The Slice 1 card values that were verified on the phone are unchanged.
+ * Nekudot — appearance (Slice 2, revised)
+ * The calm, near-monochrome look carried from V9. This revision:
+ *   • the revealed sound letter is larger and blue, sitting in the lower
+ *     band beneath the mark; the name is a lighter blue,
+ *   • the mode control is a sliding switch in a recessed track, with a
+ *     check that rides with the selection.
  * ------------------------------------------------------------------ */
 
 :root {
@@ -14,11 +14,9 @@
   --muted:        #8a94a6;  /* light grey: secondary text (card N / N) */
   --accent-start: #4a83f0;  /* blue   — primary accent                 */
   --accent-end:   #5a5fe0;  /* indigo — primary accent                 */
+  --name-ink:     #a5c1f8;  /* revealed name: the accent blue, lightened ~50% toward white */
   --track:        #dfe3ea;  /* the empty part of the progress bar      */
-  --segment-bg:   #e4e8f0;  /* the trough behind the mode toggle       */
-  /* Two layered shadows -- a tight dark one close to the card, a soft wide
-     one further out. This pairing is what reads as "lifted" (elevation)
-     instead of flat; one shadow alone looks pasted-on. */
+  --segment-bg:   #e4e8f0;  /* the recessed trough behind the switch   */
   --card-shadow:
     0 2px 5px rgba(30, 43, 77, 0.10),
     0 22px 48px rgba(30, 43, 77, 0.16);
@@ -34,12 +32,8 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* One centered column, sized to sit comfortably on a phone.
-   min-height + justify-content:center vertically centers the whole
-   group (title + progress + card + controls) within the full screen
-   height. NOTE (Slice 2 phone-check): the column is taller now than in
-   Slice 1. If the controls ever fall off the bottom on a small screen,
-   switch justify-content to flex-start -- a one-line change. */
+/* One centered column. If the controls ever fall off the bottom on a
+   small screen, switch justify-content to flex-start (a one-line change). */
 .app {
   max-width: 480px;
   min-height: 100vh;
@@ -52,7 +46,7 @@ html, body {
   gap: 24px;
 }
 
-/* Header — the title and, beneath it, the tap-hint. */
+/* Header — title, then the tap-hint. */
 .app-header {
   width: 100%;
   text-align: center;
@@ -65,17 +59,16 @@ html, body {
   letter-spacing: 0.01em;
 }
 
-/* The tap-hint (Signifier): the cue that the card responds to a tap. */
 .tap-hint {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 0.95rem;
 }
 
-/* -------- Progress: a bar that fills to the percentage, plus a line. -------- */
+/* -------- Progress -------- */
 .progress {
   width: 100%;
-  max-width: 344px;          /* line up with the card's width */
+  max-width: 344px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -86,15 +79,15 @@ html, body {
   height: 8px;
   background: var(--track);
   border-radius: 999px;
-  overflow: hidden;          /* keep the fill inside the rounded ends */
+  overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  width: 0%;                 /* the real width is set by app.js */
+  width: 0%;                 /* set by app.js */
   border-radius: 999px;
   background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
-  transition: width 0.25s ease;   /* the bar glides as it grows */
+  transition: width 0.25s ease;
 }
 
 .progress-line {
@@ -105,8 +98,6 @@ html, body {
 }
 
 /* -------- The card -------- */
-/* A square (1:1), soft-shadowed white panel — the old card shape.
-   position:relative makes it the anchor for the revealed overlays. */
 .card {
   width: 100%;
   max-width: 344px;
@@ -117,56 +108,38 @@ html, body {
   padding: 22px;
   display: flex;
   flex-direction: column;
-  position: relative;        /* anchor for the .card-name / .card-sound overlays */
-  cursor: pointer;           /* the whole card is tappable */
-  user-select: none;         /* a tap shouldn't select the card's text */
+  position: relative;        /* anchor for the revealed overlays */
+  cursor: pointer;
+  user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* The pictogram sits centered and contained, with transparent padding around it. */
 .card-figure {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 0;            /* lets the image shrink to fit inside the flex column */
-  overflow: hidden;         /* the "window" -- anything the zoom pushes past
-                                this box's edge is simply cropped away */
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pictogram {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;     /* first, fit the whole SVG canvas -- mark plus its
-                               own built-in padding -- inside the frame */
-  transform: scale(1.25);  /* then zoom in 25%, centered. This crops evenly
-                               into the SVG's own padding on all sides --
-                               enlarging the mark without touching the 29
-                               asset files. Uniform across every card, so a
-                               mark with wider padding shrinks by the same
-                               ratio as one with tighter padding; a mark
-                               already close to its own edges is the one to
-                               watch for clipping. */
+  object-fit: contain;
+  transform: scale(1.25);
   transform-origin: center;
 }
 
-/* -------- The revealed answer: a fade-in layer OVER the card. --------
-   Both start invisible (opacity 0) and fade to opacity 1 when the card
-   gets .is-revealed. Because they are positioned over the card (not in
-   the column), showing them never moves the pictogram -- "reveal in
-   place, nothing shifts." pointer-events:none lets a tap fall through
-   the text to the card beneath it.
-   The exact offsets below are the first guess; they are the values to
-   eyeball on the phone (does the name clear the top of the mark? does
-   the sound sit beneath the mark and clear the "card N / N" line?). */
+/* Revealed NAME — overlaid at top-left, the accent blue lightened. */
 .card-name {
   position: absolute;
   top: 18px;
   left: 22px;
-  right: 22px;              /* a long name wraps instead of hitting the edge */
+  right: 22px;
   margin: 0;
   text-align: left;
-  color: var(--ink);
+  color: var(--name-ink);
   font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.3;
@@ -175,29 +148,30 @@ html, body {
   pointer-events: none;
 }
 
+/* Revealed SOUND — the star of the answer: large, blue, sitting in the
+   band between the mark and the "Card N / N" line. The `bottom` value is
+   the one to eyeball on the phone: larger % = higher up the card. */
 .card-sound {
   position: absolute;
   left: 22px;
   right: 22px;
-  bottom: 44px;            /* sits just above the "card N / N" line */
+  bottom: 19%;
   margin: 0;
   text-align: center;
-  color: var(--ink);
-  font-size: 1.7rem;
+  color: var(--accent-start);
+  font-size: 3.4rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1;
   opacity: 0;
   transition: opacity 0.25s ease;
   pointer-events: none;
 }
 
-/* One switch reveals both. */
 .card.is-revealed .card-name,
 .card.is-revealed .card-sound {
   opacity: 1;
 }
 
-/* "Card N / N" — small and light, at the card's foot. */
 .card-position {
   margin: 0;
   text-align: center;
@@ -214,7 +188,8 @@ html, body {
   gap: 14px;
 }
 
-/* Prev / Next: two equal primary buttons. */
+/* Prev / Next: two equal primary buttons. They never disable (the deck
+   wraps), so there is no greyed state to style. */
 .stepper {
   display: flex;
   gap: 12px;
@@ -231,8 +206,7 @@ html, body {
   border-radius: 14px;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(30, 43, 77, 0.18);
-  /* the button micro-interaction carried from V9: a small lift + shadow */
-  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -246,40 +220,76 @@ html, body {
   box-shadow: 0 2px 6px rgba(30, 43, 77, 0.18);
 }
 
-/* At the ends of the deck, the button with nowhere to go is greyed and inert. */
-.btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Study-mode toggle: two segments in a trough; the active one is filled. */
+/* -------- Mode: a sliding switch, not a pair of buttons -------- */
+/* The recessed trough plus a pill that travels reads as "set it and
+   forget it" — deliberately different from the momentary Prev/Next. */
 .mode {
+  position: relative;
   display: flex;
   background: var(--segment-bg);
   border-radius: 14px;
   padding: 4px;
+  box-shadow: inset 0 1px 3px rgba(30, 43, 77, 0.14);   /* the recess */
 }
 
-.mode-btn {
+/* The pill: the same accent as the buttons, so the control stays in the
+   accent family; it's the track + the motion that set it apart, not colour. */
+.mode-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  box-shadow: 0 1px 4px rgba(30, 43, 77, 0.20);
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  z-index: 1;
+}
+
+.mode.is-shuffle .mode-thumb {
+  transform: translateX(100%);
+}
+
+.mode-opt {
+  position: relative;
+  z-index: 2;
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 9px 12px;
+  border: none;
+  background: transparent;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--muted);
-  background: transparent;
-  border: none;
-  border-radius: 10px;
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
-.mode-btn.is-active {
+/* The active side sits over the pill, so its text turns white. */
+.mode.is-inorder #mode-inorder,
+.mode.is-shuffle #mode-shuffle {
   color: #ffffff;
-  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-  box-shadow: 0 1px 4px rgba(30, 43, 77, 0.20);
+}
+
+/* The check keeps its 14px slot on both sides (so nothing reflows) and
+   only fades in on the active side. In order: check before the word.
+   Shuffle: check after the word — the markup order sets that. */
+.mode-check {
+  display: inline-flex;
+  align-items: center;
+  width: 14px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.mode.is-inorder #mode-inorder .mode-check,
+.mode.is-shuffle #mode-shuffle .mode-check {
+  opacity: 1;
 }
 
 /* Visible only if the data fails to load. */

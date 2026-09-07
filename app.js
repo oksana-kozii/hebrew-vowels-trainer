@@ -1,48 +1,41 @@
 'use strict';
 
 /* ------------------------------------------------------------------ *
- * Nekudot — behaviour (Slice 2)
- * Builds on Slice 1. Adds:
- *   • Reveal in place  — tap the card to fade in its name + sound; tap
- *                        again to hide. A tap does ONE job (log 40): it
- *                        never advances the deck.
- *   • Navigation       — Previous / Next stepper (+ desktop arrow keys).
- *   • Study modes      — In order / Shuffle (a random pass through the
- *                        whole deck, each card once).
- *   • Progress         — a bar + "Viewed: X of Y (Z%)" above the card.
- * Group and difficulty filters, and the language switch, arrive later.
+ * Nekudot — behaviour (Slice 2, revised)
+ * Reveal in place, navigation, study modes, and progress — now with:
+ *   • Wrapping — Previous / Next never dead-end. Next off the last card
+ *     loops to the first (In order) or deals a fresh shuffled lap
+ *     (Shuffle); Previous off the first wraps to the last.
+ *   • Per-pass progress — "seen" is scoped to the current lap and resets
+ *     whenever a new lap starts or the mode changes.
  * ------------------------------------------------------------------ */
 
-/* --- Configuration: the few things set once, in one place. --- */
+/* --- Configuration --- */
 const CONFIG = {
-  dataPath: 'data/',    // where the JSON data files live
-  imagePath: 'img/',    // where the pictograms live (the folder path lives here, once)
-  defaultLang: 'en'     // default language: English (spec §4.1)
+  dataPath: 'data/',
+  imagePath: 'img/',
+  defaultLang: 'en'
 };
 
-/* --- State: everything the running app holds in memory. ---
-   ONE source of truth for "which card is showing": the deck is an ORDER
-   (a list of card positions) plus a POSITION pointer into it. The card on
-   screen is always cards[order[position]] — never a second, separate
-   index that could drift out of step with this one. */
+/* --- State ---
+   One source of truth for "which card": an ORDER (list of card positions)
+   plus a POSITION pointer. The card on screen is cards[order[position]]. */
 const state = {
-  cards: [],            // filled from cards.json
-  groups: [],           // filled from groups.json (used from the filter slice on)
-  uiStrings: {},        // filled from ui-strings.json
+  cards: [],
+  groups: [],
+  uiStrings: {},
   lang: CONFIG.defaultLang,
 
   mode: 'inorder',      // 'inorder' | 'shuffle'
-  order: [],            // card positions, in the order they'll be shown
-  position: 0,          // where we are in `order` (0 = the first card)
+  order: [],            // card positions, in display order
+  position: 0,          // where we are in `order`
   revealed: false,      // is the current card's answer showing?
-  seen: new Set()       // ids of cards that have been displayed this session
+  seen: new Set()       // ids of cards seen in the CURRENT pass
 };
 
-/* --- Start here: load the data, build the deck, wire up the controls,
-       draw the first card. --- */
+/* --- Start here --- */
 async function init() {
   try {
-    // Fetch all three files at once, then wait for them together.
     const [cards, groups, uiStrings] = await Promise.all([
       loadJson(CONFIG.dataPath + 'cards.json'),
       loadJson(CONFIG.dataPath + 'groups.json'),
@@ -53,19 +46,15 @@ async function init() {
     state.groups = groups;
     state.uiStrings = uiStrings;
 
-    buildOrder();          // fill state.order for the current mode
-    markCurrentSeen();     // the first card is now on screen -> it's "seen"
-
-    applyStaticText();     // the fixed labels: title, tap-hint, button words
-    attachEvents();        // make the card, buttons, and arrow keys respond
-    render();              // draw everything from state
+    buildOrder();          // builds the order AND starts the first pass
+    applyStaticText();     // fixed labels: title, tap-hint, button words
+    attachEvents();
+    render();
   } catch (err) {
     showLoadError(err);
   }
 }
 
-/* Fetch one JSON file and return the parsed data.
-   Throws a clear error if the file is missing or unreadable. */
 async function loadJson(url) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -74,19 +63,14 @@ async function loadJson(url) {
   return response.json();
 }
 
-/* Look up an interface string by its language-neutral ID, in the current
-   language. Falls back to the default language, then to a visible [id]
-   marker — so a missing string is never a silent blank. */
+/* Interface string by language-neutral ID, with an English fallback. */
 function t(stringId) {
   const entry = state.uiStrings[stringId];
   if (!entry) return '[' + stringId + ']';
   return entry[state.lang] || entry[CONFIG.defaultLang] || '[' + stringId + ']';
 }
 
-/* Fill in text that isn't tied to a specific card: the title, the
-   tap-hint, and the button labels. Any element with a data-string="..."
-   attribute gets that string. Runs once at start-up (and again when the
-   language changes, in a later slice). */
+/* Fill the fixed text (title, tap-hint, button labels). */
 function applyStaticText() {
   document.querySelectorAll('[data-string]').forEach(function (el) {
     el.textContent = t(el.dataset.string);
@@ -94,25 +78,31 @@ function applyStaticText() {
 }
 
 /* ---------------------------------------------------------------- *
- * The deck order
+ * The deck order and the "pass"
  * ---------------------------------------------------------------- */
 
-/* Build state.order for the current mode, and return to the first card.
-   In order  -> 0, 1, 2, …            (deck order)
-   Shuffle   -> a random permutation of the same positions, so every card
-               appears exactly once per pass (a "shuffled bag" — not
-               independent random draws, which could repeat one card
-               before others appear and make the progress bar meaningless). */
-function buildOrder() {
-  const positions = state.cards.map(function (_card, i) { return i; });
-  state.order = (state.mode === 'shuffle') ? shuffle(positions) : positions;
-  state.position = 0;
-  state.revealed = false;
+/* Every card position, 0..n-1, in deck order. */
+function allPositions() {
+  return state.cards.map(function (_card, i) { return i; });
 }
 
-/* Fisher–Yates shuffle: the standard way to get an unbiased random
-   ordering — walk from the end, swapping each item with a random earlier
-   one. Returns a NEW array; it doesn't disturb the input. */
+/* Build the order for the current mode, then start a fresh pass.
+   In order -> deck order; Shuffle -> a random permutation (each card once). */
+function buildOrder() {
+  const positions = allPositions();
+  state.order = (state.mode === 'shuffle') ? shuffle(positions) : positions;
+  startPass();
+}
+
+/* Begin a new pass: back to the first card, hidden, progress cleared. */
+function startPass() {
+  state.position = 0;
+  state.revealed = false;
+  state.seen = new Set();     // per-pass reset — this is what makes the bar restart
+  markCurrentSeen();
+}
+
+/* Fisher–Yates shuffle: unbiased random ordering. Returns a new array. */
 function shuffle(input) {
   const a = input.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -124,64 +114,64 @@ function shuffle(input) {
   return a;
 }
 
-/* The card currently on screen (found via the order + position). */
 function currentCard() {
   return state.cards[state.order[state.position]];
 }
 
-/* Record that the current card has been displayed. Uses a Set, so adding
-   a card that's already been seen is harmless (idempotent) — the count
-   only ever reflects DISTINCT cards seen. */
+/* Record the current card as seen this pass (a Set, so it's idempotent —
+   revisiting a card never double-counts). */
 function markCurrentSeen() {
   const card = currentCard();
   if (card) state.seen.add(card.id);
 }
 
 /* ---------------------------------------------------------------- *
- * Actions — what the taps, buttons, and keys do
+ * Actions
  * ---------------------------------------------------------------- */
 
-/* Tap the card: show the answer if hidden, hide it if shown.
-   This is the ONE thing a tap does — it never moves to another card. */
+/* Tap the card: reveal if hidden, hide if shown. Never advances. */
 function toggleReveal() {
   state.revealed = !state.revealed;
   render();
 }
 
-/* Next / Previous: step through the order. They STOP at the ends (no
-   wrap): Previous is inert on the first card, Next on the last. Each move
-   starts the new card hidden again (progressive disclosure). */
+/* Next: step forward; off the last card, start a NEW lap (reshuffling in
+   Shuffle mode). A new lap resets the progress bar. */
 function goNext() {
   if (state.position < state.order.length - 1) {
     state.position += 1;
     state.revealed = false;
     markCurrentSeen();
-    render();
+  } else {
+    if (state.mode === 'shuffle') {
+      state.order = shuffle(allPositions());   // fresh random lap
+    }
+    startPass();                               // back to first, progress cleared
   }
+  render();
 }
 
+/* Previous: step back; off the first card, wrap to the last — same lap,
+   so progress is not reset (going back is reviewing, not restarting). */
 function goPrev() {
-  if (state.position > 0) {
-    state.position -= 1;
-    state.revealed = false;
-    render();
-  }
-}
-
-/* Switch study mode. Rebuilds the order and returns to its first card,
-   hidden. (Toggling to Shuffle deals a fresh random pass.) */
-function setMode(mode) {
-  if (mode === state.mode) return;
-  state.mode = mode;
-  buildOrder();
+  state.position = (state.position > 0)
+    ? state.position - 1
+    : state.order.length - 1;
+  state.revealed = false;
   markCurrentSeen();
   render();
 }
 
+/* Switch study mode: rebuild the order and start a fresh pass. */
+function setMode(mode) {
+  if (mode === state.mode) return;
+  state.mode = mode;
+  buildOrder();
+  render();
+}
+
 /* ---------------------------------------------------------------- *
- * Rendering — draw the screen FROM state. Nothing here decides
- * anything; it only reflects the current state. Call it after any change,
- * and the screen is always a faithful picture of state.
+ * Rendering — draw the screen FROM state.
  * ---------------------------------------------------------------- */
 function render() {
   renderCard();
@@ -193,21 +183,17 @@ function renderCard() {
   const card = currentCard();
   if (!card) return;
 
-  // Pictogram: the folder path + the card's bare filename, e.g. img/ + pic01.svg
   const pictogram = document.getElementById('pictogram');
   pictogram.src = CONFIG.imagePath + card.picture;
-  pictogram.alt = card.name[state.lang];   // per-card alt text, current language
+  pictogram.alt = card.name[state.lang];
 
-  // The revealed answer: name (top-left) and sound (beneath the mark).
-  // We set the text every time, even while hidden, so the correct words
-  // are already in place the instant the reveal fades them in.
+  // Revealed text set every render, even while hidden, so it's in place
+  // the instant the reveal fades it in.
   document.getElementById('card-name').textContent = card.name[state.lang];
   document.getElementById('card-sound').textContent = card.sound[state.lang];
 
-  // One class flips both from invisible to visible (the CSS fade).
   document.getElementById('card').classList.toggle('is-revealed', state.revealed);
 
-  // "Card {n} / {m}" — position within the current deck.
   const position = t('card_position')
     .replace('{n}', String(state.position + 1))
     .replace('{m}', String(state.order.length));
@@ -215,10 +201,8 @@ function renderCard() {
 }
 
 function renderProgress() {
-  // "Seen" counts DISTINCT cards that have been displayed. In Slice 2 the
-  // deck is all 29 cards, so the total is the whole deck. When the filters
-  // arrive (Slices 3–4), this is the spot where "seen" gets scoped to the
-  // filtered deck — noted here so it isn't missed.
+  // "Seen" = distinct cards viewed in the CURRENT pass. Deck is all 29 in
+  // Slice 2; when filters arrive, total and seen scope to the filtered deck.
   const total = state.order.length;
   const seen = state.seen.size;
   const percent = total ? Math.round((seen / total) * 100) : 0;
@@ -231,20 +215,15 @@ function renderProgress() {
 }
 
 function renderControls() {
-  // Ends of the deck: grey out (and disable) the button that has nowhere to go.
-  document.getElementById('btn-prev').disabled = (state.position === 0);
-  document.getElementById('btn-next').disabled =
-    (state.position === state.order.length - 1);
-
-  // Show which study mode is active.
-  document.getElementById('mode-inorder')
-    .classList.toggle('is-active', state.mode === 'inorder');
-  document.getElementById('mode-shuffle')
-    .classList.toggle('is-active', state.mode === 'shuffle');
+  // Drive the sliding switch: one class moves the pill, colours the active
+  // label, and shows its check. Prev / Next never disable (the deck wraps).
+  const mode = document.querySelector('.mode');
+  mode.classList.toggle('is-inorder', state.mode === 'inorder');
+  mode.classList.toggle('is-shuffle', state.mode === 'shuffle');
 }
 
 /* ---------------------------------------------------------------- *
- * Events — connect the page to the actions, once, at start-up.
+ * Events
  * ---------------------------------------------------------------- */
 function attachEvents() {
   document.getElementById('card').addEventListener('click', toggleReveal);
@@ -255,14 +234,12 @@ function attachEvents() {
   document.getElementById('mode-shuffle')
     .addEventListener('click', function () { setMode('shuffle'); });
 
-  // Desktop convenience: Left / Right arrows step the deck (spec §4.5).
   document.addEventListener('keydown', function (e) {
     if (e.key === 'ArrowRight') goNext();
     else if (e.key === 'ArrowLeft') goPrev();
   });
 }
 
-/* If the data can't load, say so on screen instead of showing nothing. */
 function showLoadError(err) {
   const box = document.getElementById('load-error');
   box.hidden = false;
@@ -271,5 +248,4 @@ function showLoadError(err) {
     'JSON files sit in the data/ folder of your repo. (' + err.message + ')';
 }
 
-/* Run init once the page structure is ready. */
 document.addEventListener('DOMContentLoaded', init);
