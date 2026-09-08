@@ -184,7 +184,7 @@ html, body {
    Single-glyph sounds never get it, so they keep the full 3.4rem.
    This size is the one to eyeball on the phone. */
 .card-sound.is-two-line {
-  font-size: 1.6rem;
+  font-size: 2.2rem;
 }
 
 .card.is-revealed .card-name,
@@ -230,14 +230,22 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(30, 43, 77, 0.22);
+/* The hover lift is only for devices that actually hover (a mouse).
+   Touchscreens fake hover on tap, and on Android that fake hover STICKS
+   after the tap — the button stays lifted onto its own GPU layer, and thin
+   white seams get drawn at the layer's edges (the artifact). Gating hover
+   to a real pointer keeps touch buttons flat, so nothing is composited. */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(30, 43, 77, 0.22);
+  }
 }
 
+/* Press feedback that works on touch without a transform (which is what
+   caused the seams): the shadow tightens, so the button reads as pressed. */
 .btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(30, 43, 77, 0.18);
+  box-shadow: 0 1px 3px rgba(30, 43, 77, 0.18);
 }
 
 /* -------- Mode: a sliding switch, not a pair of buttons -------- */
