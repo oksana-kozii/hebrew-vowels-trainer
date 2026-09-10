@@ -1,13 +1,19 @@
 'use strict';
 
 /* ------------------------------------------------------------------ *
- * Nekudot — behaviour (Slice 2, revised)
- * Reveal in place, navigation, study modes, and progress — now with:
- *   • Wrapping — Previous / Next never dead-end. Next off the last card
- *     loops to the first (In order) or deals a fresh shuffled lap
- *     (Shuffle); Previous off the first wraps to the last.
- *   • Per-pass progress — "seen" is scoped to the current lap and resets
- *     whenever a new lap starts or the mode changes.
+ * Nekudot — behaviour (Slice 3)
+ *
+ * Slice 2 built the study loop. Slice 3 adds the GROUP FILTER:
+ *   • A row of chips built at runtime from groups.json — multi-select.
+ *   • The deck becomes the UNION of the selected groups, kept in deck
+ *     (card-ID) order, never in chip-tap order.
+ *   • "All" means NO group filter. An empty selection means the same
+ *     thing, so turning off your last chip lands you back on "All"
+ *     rather than on an empty deck — that behaviour falls out of the
+ *     rule; there is no special case for it in the code.
+ *   • Everything downstream — the progress bar, "Card N / N", wrapping,
+ *     shuffle — rescopes to the filtered deck on its own, because all
+ *     of it reads state.order, and state.order is now the filtered set.
  * ------------------------------------------------------------------ */
 
 /* --- Configuration --- */
@@ -19,18 +25,20 @@ const CONFIG = {
 
 /* --- State ---
    One source of truth for "which card": an ORDER (list of card positions)
-   plus a POSITION pointer. The card on screen is cards[order[position]]. */
+   plus a POSITION pointer. The card on screen is cards[order[position]].
+   New in Slice 3: selectedGroups, the one input the filter reads. */
 const state = {
   cards: [],
   groups: [],
   uiStrings: {},
   lang: CONFIG.defaultLang,
 
-  mode: 'inorder',      // 'inorder' | 'shuffle'
-  order: [],            // card positions, in display order
-  position: 0,          // where we are in `order`
-  revealed: false,      // is the current card's answer showing?
-  seen: new Set()       // ids of cards seen in the CURRENT pass
+  mode: 'inorder',           // 'inorder' | 'shuffle'
+  selectedGroups: new Set(), // group ids; EMPTY = no filter = every card
+  order: [],                 // card positions, in display order
+  position: 0,               // where we are in `order`
+  revealed: false,           // is the current card's answer showing?
+  seen: new Set()            // ids of cards seen in the CURRENT pass
 };
 
 /* --- Start here --- */
@@ -46,7 +54,8 @@ async function init() {
     state.groups = groups;
     state.uiStrings = uiStrings;
 
-    buildOrder();          // builds the order AND starts the first pass
+    buildChips();          // one button per group, from the data
+    buildOrder();          // builds the filtered order AND starts the first pass
     applyStaticText();     // fixed labels: title, tap-hint, button words
     attachEvents();
     render();
@@ -70,7 +79,14 @@ function t(stringId) {
   return entry[state.lang] || entry[CONFIG.defaultLang] || '[' + stringId + ']';
 }
 
-/* Fill the fixed text (title, tap-hint, button labels). */
+/* A content value that varies by language ({en,uk,ru}) — same fallback rule
+   as t(), but for card / group data rather than interface text. */
+function localized(trio) {
+  if (!trio) return '';
+  return trio[state.lang] || trio[CONFIG.defaultLang] || '';
+}
+
+/* Fill the fixed text (title, tap-hint, button labels, empty-state). */
 function applyStaticText() {
   document.querySelectorAll('[data-string]').forEach(function (el) {
     el.textContent = t(el.dataset.string);
@@ -78,18 +94,72 @@ function applyStaticText() {
 }
 
 /* ---------------------------------------------------------------- *
+ * The group filter
+ * ---------------------------------------------------------------- */
+
+function groupById(id) {
+  return state.groups.find(function (group) { return group.id === id; });
+}
+
+/* Which card IDs the current group selection allows.
+   Returns null for "no filter at all" — a different thing from an empty
+   set, and the difference matters: null lets everything through, an empty
+   set would let nothing through. */
+function allowedCardIds() {
+  if (state.selectedGroups.size === 0) return null;
+
+  const ids = new Set();
+  state.groups.forEach(function (group) {
+    if (!state.selectedGroups.has(group.id)) return;
+    group.cardIds.forEach(function (cardId) { ids.add(cardId); });
+  });
+  return ids;
+}
+
+/* Positions of the cards that pass the filter, in DECK order.
+   Walking cards.json and testing each card — rather than walking the
+   selected groups and collecting their cards — is what keeps the deck in
+   card-ID order no matter which chip was tapped first. It also means a
+   group pointing at a card ID that doesn't exist simply matches nothing,
+   instead of crashing.
+   Slice 4 adds the difficulty test to the same `if`. */
+function activePositions() {
+  const allowed = allowedCardIds();
+  const positions = [];
+  state.cards.forEach(function (card, i) {
+    if (allowed === null || allowed.has(card.id)) positions.push(i);
+  });
+  return positions;
+}
+
+/* Tap a group chip: turn that group on or off, then re-deal. */
+function toggleGroup(groupId) {
+  if (state.selectedGroups.has(groupId)) {
+    state.selectedGroups.delete(groupId);
+  } else {
+    state.selectedGroups.add(groupId);
+  }
+  buildOrder();
+  render();
+}
+
+/* Tap "All": drop the group filter. Already there = nothing happens,
+   exactly like tapping the radio button that is already chosen. */
+function selectAllGroups() {
+  if (state.selectedGroups.size === 0) return;
+  state.selectedGroups.clear();
+  buildOrder();
+  render();
+}
+
+/* ---------------------------------------------------------------- *
  * The deck order and the "pass"
  * ---------------------------------------------------------------- */
 
-/* Every card position, 0..n-1, in deck order. */
-function allPositions() {
-  return state.cards.map(function (_card, i) { return i; });
-}
-
-/* Build the order for the current mode, then start a fresh pass.
+/* Build the order for the current filter + mode, then start a fresh pass.
    In order -> deck order; Shuffle -> a random permutation (each card once). */
 function buildOrder() {
-  const positions = allPositions();
+  const positions = activePositions();
   state.order = (state.mode === 'shuffle') ? shuffle(positions) : positions;
   startPass();
 }
@@ -131,22 +201,28 @@ function markCurrentSeen() {
 
 /* Tap the card: reveal if hidden, hide if shown. Never advances. */
 function toggleReveal() {
+  if (state.order.length === 0) return;
   state.revealed = !state.revealed;
   render();
 }
 
 /* Next: step forward; off the last card, start a NEW lap (reshuffling in
-   Shuffle mode). A new lap resets the progress bar. */
+   Shuffle mode). A new lap resets the progress bar.
+   Slice 3 fix: the reshuffle now re-deals the FILTERED deck. It used to
+   reach for the whole deck — harmless while nothing could filter it, and
+   it would have quietly undone the filter the moment something could. */
 function goNext() {
+  if (state.order.length === 0) return;
+
   if (state.position < state.order.length - 1) {
     state.position += 1;
     state.revealed = false;
     markCurrentSeen();
   } else {
     if (state.mode === 'shuffle') {
-      state.order = shuffle(allPositions());   // fresh random lap
+      state.order = shuffle(activePositions());   // fresh random lap, same filter
     }
-    startPass();                               // back to first, progress cleared
+    startPass();                                  // back to first, progress cleared
   }
   render();
 }
@@ -154,6 +230,8 @@ function goNext() {
 /* Previous: step back; off the first card, wrap to the last — same lap,
    so progress is not reset (going back is reviewing, not restarting). */
 function goPrev() {
+  if (state.order.length === 0) return;
+
   state.position = (state.position > 0)
     ? state.position - 1
     : state.order.length - 1;
@@ -174,9 +252,66 @@ function setMode(mode) {
  * Rendering — draw the screen FROM state.
  * ---------------------------------------------------------------- */
 function render() {
-  renderCard();
-  renderProgress();
+  // A filter can in principle select nothing. Groups alone can't do it
+  // (an empty selection means "All"), so today this is a safety net rather
+  // than a route the learner can take; Slice 4's difficulty filter is what
+  // can genuinely empty a deck. Either way the app shows a message instead
+  // of a broken card and a "Card 1 / 0".
+  const isEmpty = state.order.length === 0;
+  document.getElementById('app').classList.toggle('is-empty', isEmpty);
+  document.getElementById('empty-state').hidden = !isEmpty;
+
+  renderChips();
+  if (!isEmpty) {
+    renderCard();
+    renderProgress();
+  }
   renderControls();
+}
+
+/* Build one button per group, plus the "All" chip in front of them.
+   Called once — the set of groups doesn't change while the app is open.
+   The LABELS are written on every render instead of here, so the language
+   toggle in Slice 5 gets them for free. */
+function buildChips() {
+  const row = document.getElementById('chips');
+  row.innerHTML = '';
+
+  row.appendChild(makeChip('all', selectAllGroups));
+  state.groups.forEach(function (group) {
+    row.appendChild(makeChip(group.id, function () { toggleGroup(group.id); }));
+  });
+}
+
+function makeChip(id, onClick) {
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'chip';
+  chip.dataset.group = id;
+  // aria-pressed is the standard way to tell a screen reader that a button
+  // is an on/off switch, and which way it is currently set.
+  chip.setAttribute('aria-pressed', 'false');
+  chip.addEventListener('click', onClick);
+  return chip;
+}
+
+/* Label + on/off state for every chip. "All" is ACTIVE when no group is
+   selected — derived, never stored, so it cannot drift out of step with
+   the actual selection. */
+function renderChips() {
+  document.querySelectorAll('#chips .chip').forEach(function (chip) {
+    const id = chip.dataset.group;
+    const isAll = (id === 'all');
+    const group = isAll ? null : groupById(id);
+
+    chip.textContent = isAll ? t('filter_all') : localized(group.name);
+
+    const isActive = isAll
+      ? state.selectedGroups.size === 0
+      : state.selectedGroups.has(id);
+    chip.classList.toggle('is-active', isActive);
+    chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
 }
 
 function renderCard() {
@@ -185,12 +320,12 @@ function renderCard() {
 
   const pictogram = document.getElementById('pictogram');
   pictogram.src = CONFIG.imagePath + card.picture;
-  pictogram.alt = card.name[state.lang];
+  pictogram.alt = localized(card.name);
 
   // Revealed text set every render, even while hidden, so it's in place
   // the instant the reveal fades it in.
-  document.getElementById('card-name').textContent = card.name[state.lang];
-  document.getElementById('card-sound').textContent = card.sound[state.lang];
+  document.getElementById('card-name').textContent = localized(card.name);
+  document.getElementById('card-sound').textContent = localized(card.sound);
   fitSound();   // shrink the sound letter if this string wraps to two lines
 
   document.getElementById('card').classList.toggle('is-revealed', state.revealed);
@@ -217,8 +352,9 @@ function fitSound() {
 }
 
 function renderProgress() {
-  // "Seen" = distinct cards viewed in the CURRENT pass. Deck is all 29 in
-  // Slice 2; when filters arrive, total and seen scope to the filtered deck.
+  // "Seen" = distinct cards viewed in the CURRENT pass, out of the CURRENT
+  // filtered deck. Both numbers come from state.order, so the bar rescoped
+  // itself the moment the filter started shaping that list.
   const total = state.order.length;
   const seen = state.seen.size;
   const percent = total ? Math.round((seen / total) * 100) : 0;

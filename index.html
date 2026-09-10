@@ -8,7 +8,7 @@
 </head>
 <body>
   <!-- The whole app lives in one centered column. -->
-  <main class="app">
+  <main class="app" id="app">
 
     <!--
       HEADER — the title identifies the app; the tap-hint (the "Signifier")
@@ -21,9 +21,20 @@
     </header>
 
     <!--
+      GROUP FILTER — one chip per vowel group, built by app.js from
+      groups.json (never hard-coded here). Multi-select: the deck is the
+      union of the chips that are on. "All" means no group filter, and an
+      empty selection means the same thing, so the row can never leave you
+      with nothing to study. It sits above the progress bar because the
+      filter DEFINES the deck and the bar DESCRIBES it.
+    -->
+    <section class="chips" id="chips" role="group" aria-label="Vowel groups"></section>
+
+    <!--
       PROGRESS — how much of the current pass has been seen. Sits above
       the card. A bar that fills to the percentage, plus a plain line.
-      Resets at the start of each new pass (a new lap, or a mode switch).
+      Resets at the start of each new pass (a new lap, a mode switch, or
+      a filter change) and counts against the FILTERED deck.
     -->
     <section class="progress" id="progress">
       <div class="progress-track">
@@ -46,6 +57,14 @@
       <p class="card-sound" id="card-sound"></p>
       <p class="card-position" id="card-position"></p>
     </section>
+
+    <!--
+      EMPTY STATE — shown in place of the card, progress and controls when
+      the filters match no cards, so the app never renders "Card 1 / 0".
+      The chip row deliberately stays visible above it: the way out has to
+      be on screen.
+    -->
+    <p class="empty-state" id="empty-state" data-string="empty_state" hidden>No cards match — adjust filters</p>
 
     <!--
       CONTROLS — below the card, never on it. Previous / Next step through

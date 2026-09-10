@@ -1,0 +1,407 @@
+/* ------------------------------------------------------------------ *
+ * Nekudot — appearance (Slice 3)
+ * The calm, near-monochrome look carried from V9. Slice 3 adds:
+ *   • the group filter chips — pill outlines when off, the accent
+ *     gradient when on, so "what am I studying" reads at a glance,
+ *   • the empty state, which replaces the card / progress / controls
+ *     while leaving the chip row visible.
+ * Everything Slice 2 settled is unchanged.
+ * ------------------------------------------------------------------ */
+
+:root {
+  --bg:           #eef0f4;  /* page background: soft light grey        */
+  --card-bg:      #ffffff;  /* the white card                          */
+  --ink:          #1e2b4d;  /* dark navy: the title                    */
+  --muted:        #8a94a6;  /* light grey: secondary text (card N / N) */
+  --accent-start: #4a83f0;  /* blue   — primary accent                 */
+  --accent-end:   #5a5fe0;  /* indigo — primary accent                 */
+  /* the accent gradient, each stop lightened ~50% toward white — for the card name */
+  --accent-start-light: #a5c1f8;
+  --accent-end-light:   #adaff0;
+  --track:        #dfe3ea;  /* the empty part of the progress bar      */
+  --segment-bg:   #e4e8f0;  /* the recessed trough behind the switch   */
+  --card-shadow:
+    0 2px 5px rgba(30, 43, 77, 0.10),
+    0 22px 48px rgba(30, 43, 77, 0.16);
+  --radius:       22px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* One centered column. If the controls ever fall off the bottom on a
+   small screen, switch justify-content to flex-start (a one-line change). */
+.app {
+  max-width: 480px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 32px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+/* Header — title, then the tap-hint. */
+.app-header {
+  width: 100%;
+  text-align: center;
+}
+
+.app-title {
+  margin: 8px 0 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.tap-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* -------- Group filter chips -------- */
+/* A wrapping row so a seventh group (or a longer localized label) needs no
+   layout change — it just takes the next line. */
+.chips {
+  width: 100%;
+  max-width: 344px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Off state: an outlined pill on the card white, so the row reads as
+   quiet chrome rather than as six more buttons competing with Prev/Next. */
+.chip {
+  min-height: 34px;
+  padding: 7px 13px;
+  border: 1px solid var(--track);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--muted);
+  font-family: inherit;      /* buttons don't inherit the page font by default */
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* On state: the same accent gradient as the primary buttons, so "selected"
+   means one thing everywhere in the app. */
+.chip.is-active {
+  color: #ffffff;
+  border-color: transparent;
+  background-image: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+}
+
+/* Hover is gated to a real pointer for the same reason the Prev/Next lift
+   is (see the note on .btn): a touchscreen fakes hover on tap and, on
+   Android, the fake hover sticks. */
+@media (hover: hover) and (pointer: fine) {
+  .chip:not(.is-active):hover {
+    color: var(--ink);
+    border-color: var(--accent-start);
+  }
+}
+
+/* -------- Progress -------- */
+.progress {
+  width: 100%;
+  max-width: 344px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--track);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;                 /* set by app.js */
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  transition: width 0.25s ease;
+}
+
+.progress-line {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* -------- The card -------- */
+.card {
+  width: 100%;
+  max-width: 344px;
+  aspect-ratio: 1 / 1;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  position: relative;        /* anchor for the revealed overlays */
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-figure {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pictogram {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform: scale(1.25);
+  transform-origin: center;
+}
+
+/* Revealed NAME — overlaid at top-left, the accent blue lightened. */
+.card-name {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  right: 22px;
+  margin: 0;
+  text-align: left;
+  /* the accent gradient (lightened) painted into the letters themselves */
+  background-image: linear-gradient(135deg, var(--accent-start-light), var(--accent-end-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--accent-start-light);   /* fallback if clip-to-text is unsupported */
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+/* Revealed SOUND — the star of the answer: large, blue, sitting in the
+   band between the mark and the "Card N / N" line. The `bottom` value is
+   the one to eyeball on the phone: larger % = higher up the card. */
+.card-sound {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 19%;
+  margin: 0;
+  text-align: center;
+  /* the same accent gradient as the buttons, painted into the letter */
+  background-image: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--accent-start);         /* fallback if clip-to-text is unsupported */
+  font-size: 3.4rem;                  /* the cap — never larger than this */
+  font-weight: 700;
+  line-height: 1.1;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+/* When a sound string is long enough to wrap onto a second line (Shva),
+   app.js adds this class so the text shrinks and stays clear of the mark.
+   Single-glyph sounds never get it, so they keep the full 3.4rem.
+   This size is the one to eyeball on the phone. */
+.card-sound.is-two-line {
+  font-size: 2.2rem;
+}
+
+.card.is-revealed .card-name,
+.card.is-revealed .card-sound {
+  opacity: 1;
+}
+
+.card-position {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* -------- Controls below the card -------- */
+.controls {
+  width: 100%;
+  max-width: 344px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Prev / Next: two equal primary buttons. They never disable (the deck
+   wraps), so there is no greyed state to style. */
+.stepper {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(30, 43, 77, 0.18);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The hover lift is only for devices that actually hover (a mouse).
+   Touchscreens fake hover on tap, and on Android that fake hover STICKS
+   after the tap — the button stays lifted onto its own GPU layer, and thin
+   white seams get drawn at the layer's edges (the artifact). Gating hover
+   to a real pointer keeps touch buttons flat, so nothing is composited. */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(30, 43, 77, 0.22);
+  }
+}
+
+/* Press feedback that works on touch without a transform (which is what
+   caused the seams): the shadow tightens, so the button reads as pressed. */
+.btn:active {
+  box-shadow: 0 1px 3px rgba(30, 43, 77, 0.18);
+}
+
+/* -------- Mode: a sliding switch, not a pair of buttons -------- */
+/* The recessed trough plus a pill that travels reads as "set it and
+   forget it" — deliberately different from the momentary Prev/Next. */
+.mode {
+  position: relative;
+  display: flex;
+  background: var(--segment-bg);
+  border-radius: 14px;
+  padding: 4px;
+  box-shadow: inset 0 1px 3px rgba(30, 43, 77, 0.14);   /* the recess */
+}
+
+/* The pill: the same accent as the buttons, so the control stays in the
+   accent family; it's the track + the motion that set it apart, not colour. */
+.mode-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  box-shadow: 0 1px 4px rgba(30, 43, 77, 0.20);
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  z-index: 1;
+}
+
+.mode.is-shuffle .mode-thumb {
+  transform: translateX(100%);
+}
+
+.mode-opt {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The active side sits over the pill, so its text turns white. */
+.mode.is-inorder #mode-inorder,
+.mode.is-shuffle #mode-shuffle {
+  color: #ffffff;
+}
+
+/* The check keeps its 14px slot on both sides (so nothing reflows) and
+   only fades in on the active side. In order: check before the word.
+   Shuffle: check after the word — the markup order sets that. */
+.mode-check {
+  display: inline-flex;
+  align-items: center;
+  width: 14px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.mode.is-inorder #mode-inorder .mode-check,
+.mode.is-shuffle #mode-shuffle .mode-check {
+  opacity: 1;
+}
+
+/* -------- Empty state -------- */
+/* When no card matches, the card, the progress readout and the stepper all
+   go away — a control with nothing to act on is worse than no control. The
+   chip row stays: it is the way out. */
+.app.is-empty .progress,
+.app.is-empty .card,
+.app.is-empty .controls {
+  display: none;
+}
+
+.empty-state {
+  width: 100%;
+  max-width: 344px;
+  margin: 0;
+  padding: 26px 20px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  color: var(--muted);
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+/* Visible only if the data fails to load. */
+.load-error {
+  max-width: 380px;
+  margin: 0;
+  color: #b23b3b;
+  background: #ffffff;
+  border: 1px solid #f0c9c9;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
