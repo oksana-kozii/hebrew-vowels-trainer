@@ -1,10 +1,13 @@
 /* ------------------------------------------------------------------ *
- * Nekudot — appearance (Slice 2, revised)
- * The calm, near-monochrome look carried from V9. This revision:
- *   • the revealed sound letter is larger and blue, sitting in the lower
- *     band beneath the mark; the name is a lighter blue,
- *   • the mode control is a sliding switch in a recessed track, with a
- *     check that rides with the selection.
+ * Nekudot — appearance (Slice 3)
+ * The calm, near-monochrome look carried from V9. Slice 3 adds:
+ *   • the group filter chips — pill outlines when off, the accent
+ *     gradient when on, so "what am I studying" reads at a glance,
+ *   • the empty state, which replaces the card / progress / controls
+ *     while leaving the chip row visible.
+ * Everything Slice 2 settled is unchanged apart from one line, marked
+ * below: the column's vertical alignment now degrades safely when the
+ * content is taller than the screen.
  * ------------------------------------------------------------------ */
 
 :root {
@@ -34,8 +37,13 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* One centered column. If the controls ever fall off the bottom on a
-   small screen, switch justify-content to flex-start (a one-line change). */
+/* One centered column.
+   The two justify-content lines are deliberate, not a duplicate: older
+   browsers use the first and centre; newer ones use the second, which
+   centres while there is room and falls back to top-aligned when the
+   content is taller than the screen — without `safe`, an over-tall centred
+   column has its top edge cut off and unreachable by scrolling. Slice 3
+   adds a row of chips, so the column is taller than it was. */
 .app {
   max-width: 480px;
   min-height: 100vh;
@@ -45,6 +53,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  justify-content: safe center;
   gap: 24px;
 }
 
@@ -65,6 +74,54 @@ html, body {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+/* -------- Group filter chips -------- */
+/* A wrapping row so a seventh group (or a longer localized label) needs no
+   layout change — it just takes the next line. */
+.chips {
+  width: 100%;
+  max-width: 344px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Off state: an outlined pill on the card white, so the row reads as
+   quiet chrome rather than as six more buttons competing with Prev/Next. */
+.chip {
+  min-height: 34px;
+  padding: 7px 13px;
+  border: 1px solid var(--track);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--muted);
+  font-family: inherit;      /* buttons don't inherit the page font by default */
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* On state: the same accent gradient as the primary buttons, so "selected"
+   means one thing everywhere in the app. */
+.chip.is-active {
+  color: #ffffff;
+  border-color: transparent;
+  background-image: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+}
+
+/* Hover is gated to a real pointer for the same reason the Prev/Next lift
+   is (see the note on .btn): a touchscreen fakes hover on tap and, on
+   Android, the fake hover sticks. */
+@media (hover: hover) and (pointer: fine) {
+  .chip:not(.is-active):hover {
+    color: var(--ink);
+    border-color: var(--accent-start);
+  }
 }
 
 /* -------- Progress -------- */
@@ -318,6 +375,30 @@ html, body {
 .mode.is-inorder #mode-inorder .mode-check,
 .mode.is-shuffle #mode-shuffle .mode-check {
   opacity: 1;
+}
+
+/* -------- Empty state -------- */
+/* When no card matches, the card, the progress readout and the stepper all
+   go away — a control with nothing to act on is worse than no control. The
+   chip row stays: it is the way out. */
+.app.is-empty .progress,
+.app.is-empty .card,
+.app.is-empty .controls {
+  display: none;
+}
+
+.empty-state {
+  width: 100%;
+  max-width: 344px;
+  margin: 0;
+  padding: 26px 20px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  color: var(--muted);
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.45;
 }
 
 /* Visible only if the data fails to load. */
