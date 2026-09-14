@@ -89,21 +89,50 @@ html, body {
 }
 
 /* Off state: an outlined pill on the card white, so the row reads as
-   quiet chrome rather than as six more buttons competing with Prev/Next. */
+   quiet chrome rather than as six more buttons competing with Prev/Next.
+   Sized for the thumb: ~1.5x the first attempt (34px -> 46px tall), grown
+   through PADDING rather than font-size so the chips stay easy to hit
+   without the labels starting to compete with the card. */
 .chip {
-  min-height: 34px;
-  padding: 7px 13px;
+  min-height: 46px;
+  padding: 11px 18px;
   border: 1px solid var(--track);
   border-radius: 999px;
   background: var(--card-bg);
   color: var(--muted);
   font-family: inherit;      /* buttons don't inherit the page font by default */
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
   transition: color 0.2s ease, border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* "All" is a DIFFERENT kind of control from the group chips — it clears the
+   filter rather than toggling one group. It stays the same size (size would
+   read as "more important", which it isn't) and is set apart instead: a gap,
+   plus a hairline divider drawn AFTER it.
+   The divider is a pseudo-element, not a right-border, on purpose — the
+   .is-active rules rewrite the chip's border to draw the gradient fill, and
+   a border-based divider gets caught up in that. A separate drawn line is
+   untouched by any of it, so it looks the same whether "All" is on or off.
+   It also survives wrapping: if the groups spill to a second row, "All"
+   still reads as the odd one out on the left. */
+.chip[data-group="all"] {
+  position: relative;    /* anchor for the divider */
+  margin-right: 15px;    /* room for the gap + the drawn line */
+}
+
+.chip[data-group="all"]::after {
+  content: "";
+  position: absolute;
+  right: -8px;           /* sits in the margin, midway to the first group chip */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 22px;
+  background: var(--track);
 }
 
 /* On state: the same accent gradient as the primary buttons, so "selected"
