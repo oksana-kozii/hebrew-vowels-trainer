@@ -60,7 +60,16 @@ html, body {
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 22px 26px;
+  /* Bottom padding is the normal 22px PLUS whatever the device reports as
+     its bottom "safe area" — the strip an overlapping obstruction sits in:
+     a phone's home indicator, or Firefox-for-Android's bottom address bar,
+     which overlaps the page rather than shrinking it the way Chrome's top
+     bar does. On Chrome and most phones the inset is 0, so this is just
+     22px and nothing moves; where there IS a bottom obstruction the last
+     control (the mode toggle) is pushed clear of it.
+     Requires viewport-fit=cover in index.html — without that opt-in the
+     env() value reads back as 0 everywhere and this has no effect. */
+  padding: 22px 26px calc(22px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
