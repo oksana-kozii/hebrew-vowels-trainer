@@ -60,16 +60,7 @@ html, body {
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
-  /* Bottom padding is the normal 22px PLUS whatever the device reports as
-     its bottom "safe area" — the strip an overlapping obstruction sits in:
-     a phone's home indicator, or Firefox-for-Android's bottom address bar,
-     which overlaps the page rather than shrinking it the way Chrome's top
-     bar does. On Chrome and most phones the inset is 0, so this is just
-     22px and nothing moves; where there IS a bottom obstruction the last
-     control (the mode toggle) is pushed clear of it.
-     Requires viewport-fit=cover in index.html — without that opt-in the
-     env() value reads back as 0 everywhere and this has no effect. */
-  padding: 22px 26px calc(22px + env(safe-area-inset-bottom));
+  padding: 22px 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -356,8 +347,13 @@ html, body {
 
 /* -------- Mode: a sliding switch, not a pair of buttons -------- */
 /* The recessed trough plus a pill that travels reads as "set it and
-   forget it" — deliberately different from the momentary Prev/Next. */
+   forget it" — deliberately different from the momentary Prev/Next.
+   It now sits on its own in the column (it used to be inside .controls,
+   which gave it its width), so it carries its own width to stay aligned
+   with the chips and the card. */
 .mode {
+  width: 100%;
+  max-width: 344px;
   position: relative;
   display: flex;
   background: var(--segment-bg);
@@ -430,6 +426,7 @@ html, body {
 /* When no card matches, the card, the progress readout and the stepper all
    go away — a control with nothing to act on is worse than no control. The
    chip row stays: it is the way out. */
+.app.is-empty .mode,
 .app.is-empty .progress,
 .app.is-empty .card,
 .app.is-empty .controls {

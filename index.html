@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nekudot</title>
-  <link rel="stylesheet" href="style.css?v=7" />
+  <link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
   <!-- The whole app lives in one centered column. -->
@@ -29,6 +29,24 @@
       filter DEFINES the deck and the bar DESCRIBES it.
     -->
     <section class="chips" id="chips" role="group" aria-label="Vowel groups"></section>
+
+    <!--
+      STUDY MODE — moved up here from the bottom so it sits with the chips:
+      together they are the "set up the session" controls (which cards, in
+      what order). A sliding switch: the pill glides to the chosen side and
+      a check confirms it — before "In order", after "Shuffle".
+    -->
+    <div class="mode" role="group" aria-label="Study mode">
+      <span class="mode-thumb" aria-hidden="true"></span>
+      <button class="mode-opt" id="mode-inorder">
+        <span class="mode-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        <span data-string="mode_inorder">In order</span>
+      </button>
+      <button class="mode-opt" id="mode-shuffle">
+        <span data-string="mode_shuffle">Shuffle</span>
+        <span class="mode-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+      </button>
+    </div>
 
     <!--
       PROGRESS — how much of the current pass has been seen. Sits above
@@ -67,27 +85,17 @@
     <p class="empty-state" id="empty-state" data-string="empty_state" hidden>No cards match — adjust filters</p>
 
     <!--
-      CONTROLS — below the card, never on it. Previous / Next step through
-      the deck and WRAP at the ends (they never disable). The mode control
-      is a sliding switch: the pill glides to the chosen side and a check
-      confirms it — before "In order", after "Shuffle".
+      NAVIGATION — below the card. Previous / Next step through the deck and
+      WRAP at the ends (they never disable). The study-mode switch used to
+      sit here too; it moved up beside the chips, so the two "set up the
+      session" controls (which cards, and in what order) live together and
+      only the big navigation buttons remain at the bottom — where a phone's
+      overlapping bottom bar can't hide a thin control.
     -->
     <nav class="controls">
       <div class="stepper">
         <button class="btn" id="btn-prev" data-string="nav_prev">Previous</button>
         <button class="btn" id="btn-next" data-string="nav_next">Next</button>
-      </div>
-
-      <div class="mode" role="group" aria-label="Study mode">
-        <span class="mode-thumb" aria-hidden="true"></span>
-        <button class="mode-opt" id="mode-inorder">
-          <span class="mode-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
-          <span data-string="mode_inorder">In order</span>
-        </button>
-        <button class="mode-opt" id="mode-shuffle">
-          <span data-string="mode_shuffle">Shuffle</span>
-          <span class="mode-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
-        </button>
       </div>
     </nav>
 
