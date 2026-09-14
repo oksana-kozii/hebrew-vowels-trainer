@@ -37,21 +37,24 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* One centered column.
+/* One top-aligned column.
    Height: 100vh is what a phone reports as the FULL screen — the tallest
    the viewport ever gets, ignoring the address bar that overlaps the
    bottom. On its own it lets the bar cover the last control (the mode
    toggle). 100dvh is the "dynamic" height: the space actually visible
    right now, the bar's height subtracted. Newer browsers take the second
    line; older ones that don't know dvh fall back to the first, no worse
-   off than before. Same two-line fallback idea as the justify-content
-   pair below.
-
-   The two justify-content lines are the same trick for a different edge:
-   older browsers use the first and centre; newer ones use the second,
-   which centres while there is room and falls back to top-aligned when the
-   content is taller than the screen — without `safe`, an over-tall centred
-   column has its TOP cut off and unreachable by scrolling. */
+   off than before — a two-line fallback, the older unit then the newer. */
+/* Alignment: pack from the top (flex-start), not centred.
+   The content is now just SHORTER than a phone viewport, so centring
+   split the small leftover evenly above and below — and the slice below
+   was enough to tuck the mode toggle under the address bar. Top-aligning
+   sends all the leftover to the bottom, past the last control, where it
+   does no harm; the toggle sits fully on screen. On a tall desktop window
+   the column simply sits at the top with room beneath, which is fine.
+   (This retires the earlier `safe center` guard: top-alignment can't clip
+   the top the way centring an over-tall column could, so the guard it
+   protected against no longer applies.) */
 .app {
   max-width: 480px;
   min-height: 100vh;
@@ -61,8 +64,7 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  justify-content: safe center;
+  justify-content: flex-start;
   gap: 16px;
 }
 
