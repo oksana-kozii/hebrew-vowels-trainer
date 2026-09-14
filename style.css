@@ -38,15 +38,24 @@ html, body {
 }
 
 /* One centered column.
-   The two justify-content lines are deliberate, not a duplicate: older
-   browsers use the first and centre; newer ones use the second, which
-   centres while there is room and falls back to top-aligned when the
+   Height: 100vh is what a phone reports as the FULL screen — the tallest
+   the viewport ever gets, ignoring the address bar that overlaps the
+   bottom. On its own it lets the bar cover the last control (the mode
+   toggle). 100dvh is the "dynamic" height: the space actually visible
+   right now, the bar's height subtracted. Newer browsers take the second
+   line; older ones that don't know dvh fall back to the first, no worse
+   off than before. Same two-line fallback idea as the justify-content
+   pair below.
+
+   The two justify-content lines are the same trick for a different edge:
+   older browsers use the first and centre; newer ones use the second,
+   which centres while there is room and falls back to top-aligned when the
    content is taller than the screen — without `safe`, an over-tall centred
-   column has its top edge cut off and unreachable by scrolling. Slice 3
-   adds a row of chips, so the column is taller than it was. */
+   column has its TOP cut off and unreachable by scrolling. */
 .app {
   max-width: 480px;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: 32px 26px;
   display: flex;
