@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nekudot</title>
-  <link rel="stylesheet" href="style.css?v=10" />
+  <link rel="stylesheet" href="style.css?v=11" />
 </head>
 <body>
   <!-- The whole app lives in one centered column. -->
@@ -22,9 +22,11 @@
       the hint stays truly centred under the title).
     -->
     <header class="app-header">
-      <h1 class="app-title" data-string="app_title">Nekudot</h1>
-
-      <div class="hint-row">
+      <!-- Title row: the Level menu sits in the left corner, the title is
+           centred, and the right corner is reserved for the language menu
+           (Slice 5). The two side cells flex equally so the title stays
+           dead-centre; the Level menu anchors its own fold-out. -->
+      <div class="title-row">
         <!-- Level (difficulty) menu — top-left corner control. The lines
              inside are built by app.js from the levels PRESENT in the data
              (never hard-coded here), and their checked state is derived,
@@ -38,11 +40,13 @@
           <div class="level-panel" id="level-panel" role="group" aria-label="Level"></div>
         </div>
 
-        <p class="tap-hint" data-string="reveal_prompt">Tap the card to reveal the answer</p>
+        <h1 class="app-title" data-string="app_title">Nekudot</h1>
 
         <!-- Slice 5: the language menu goes here, mirroring the level menu. -->
         <div class="header-slot header-slot-right" aria-hidden="true"></div>
       </div>
+
+      <p class="tap-hint" data-string="reveal_prompt">Tap the card to reveal the answer</p>
     </header>
 
     <!--

@@ -1,9 +1,10 @@
 /* ------------------------------------------------------------------ *
  * Nekudot — appearance (Slice 4)
  * The calm, near-monochrome look carried from V9. Slice 4 adds:
- *   • a corner-control header — the tap-hint now shares its row with a
- *     top-left Level (difficulty) menu, and a reserved right cell for
- *     Slice 5's language menu, so the two corners are symmetric,
+ *   • a corner-control header — the title shares its row with a top-left
+ *     Level (difficulty) menu and a reserved right cell for Slice 5's
+ *     language menu, so the two corners flank the title symmetrically and
+ *     the tap-hint gets a full row of its own below,
  *   • the Level menu itself — a compact outlined button plus a floating
  *     fold-out whose chosen lines wear the same accent fill as a selected
  *     chip, so "selected" means one thing everywhere in the app.
@@ -69,10 +70,10 @@ html, body {
   gap: 16px;
 }
 
-/* Header — title on its own row, then the tap-hint row with corner
-   controls. `position: relative` isn't needed by the header itself (the
-   fold-out anchors to .level-menu), but it keeps the header a self-contained
-   stacking context, harmless and future-proof. */
+/* Header — the title row (with the corner controls) on top, then the
+   tap-hint on its own row below. `position: relative` isn't needed by the
+   header itself (the fold-out anchors to .level-menu), but it keeps the
+   header a self-contained stacking context, harmless and future-proof. */
 .app-header {
   width: 100%;
   text-align: center;
@@ -80,30 +81,28 @@ html, body {
 }
 
 .app-title {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: 0.01em;
 }
 
-/* The tap-hint's row: a left cell, the centred hint, a right cell.
-   The two side cells flex EQUALLY (flex: 1), so the hint — sized to its
-   own content — sits dead centre under the title regardless of what the
-   side cells hold. Today the left cell holds the Level menu and the right
-   is empty; in Slice 5 the right cell holds the language menu and the two
-   stay balanced with no change here. */
-.hint-row {
+/* The title row: a left cell (Level menu), the centred title, a right cell
+   (reserved for the language menu, Slice 5). The two side cells flex
+   EQUALLY (flex: 1), so the title — sized to its own content — sits
+   dead-centre regardless of what the side cells hold. The corners live on
+   the title's row, so the longer tap-hint below gets a full width of its
+   own and never collides with a control. */
+.title-row {
   width: 100%;
-  margin-top: 6px;
+  margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .tap-hint {
-  flex: 0 1 auto;            /* content width, may shrink/wrap under pressure */
-  min-width: 0;
-  margin: 0;                 /* the row handles spacing now */
+  margin: 6px 0 0;           /* its own full-width row under the title row */
   text-align: center;
   color: var(--muted);
   font-size: 0.95rem;
@@ -111,7 +110,7 @@ html, body {
 
 /* The reserved right cell — the mirror of the Level menu's side. Empty
    until Slice 5 fills it, but it claims its half of the row now so the
-   hint is centred, not pushed right by the left control. */
+   title is centred, not pushed right by the left control. */
 .header-slot-right {
   flex: 1 1 0;
   min-width: 0;
@@ -181,7 +180,7 @@ html, body {
   top: calc(100% + 6px);
   left: 0;
   z-index: 50;
-  min-width: 180px;
+  min-width: 135px;          /* 25% narrower than the old 180px floor */
   padding: 6px;
   background: var(--card-bg);
   border: 1px solid var(--track);
