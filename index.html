@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nekudot</title>
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=12" />
 </head>
 <body>
   <!-- The whole app lives in one centered column. -->
@@ -42,8 +42,19 @@
 
         <h1 class="app-title" data-string="app_title">Nekudot</h1>
 
-        <!-- Slice 5: the language menu goes here, mirroring the level menu. -->
-        <div class="header-slot header-slot-right" aria-hidden="true"></div>
+        <!-- Slice 5: the language menu — the mirror of the Level menu, in the
+             title row's right corner. Single-select (a radio, not toggles):
+             exactly one language is on. The lines inside are built by app.js
+             from the languages the app offers; their checked state is derived
+             from state.lang, never stored. -->
+        <div class="lang-menu" id="lang-menu">
+          <button class="lang-menu-btn" id="lang-menu-btn"
+                  type="button" aria-haspopup="true" aria-expanded="false">
+            <span data-string="language_label">Language</span>
+            <span class="caret" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          </button>
+          <div class="lang-panel" id="lang-panel" role="group" aria-label="Language"></div>
+        </div>
       </div>
 
       <p class="tap-hint" data-string="reveal_prompt">Tap the card to reveal the answer</p>
@@ -125,6 +136,6 @@
 
   </main>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

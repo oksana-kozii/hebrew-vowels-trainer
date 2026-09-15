@@ -69,6 +69,7 @@ async function init() {
 
     buildChips();          // one button per group, from the data
     buildLevelMenu();      // one line per level PRESENT in the data
+    buildLanguageMenu();   // one line per language the app offers (Slice 5)
     buildOrder();          // builds the filtered order AND starts the first pass
     applyStaticText();     // fixed labels: title, tap-hint, button words
     attachEvents();
@@ -321,6 +322,7 @@ function render() {
 
   renderChips();
   renderLevelMenu();        // both facets' controls stay reachable, empty or not
+  renderLanguageMenu();     // the switcher's check follows state.lang (Slice 5)
   if (!isEmpty) {
     renderCard();
     renderProgress();
@@ -428,6 +430,7 @@ function renderLevelMenu() {
 /* Open / close the Level fold-out. aria-expanded tells a screen reader
    whether the panel is showing; the caret rotation is the visual echo. */
 function toggleLevelMenu() {
+  closeLanguageMenu();       // only one corner menu open at a time
   const menu = document.getElementById('level-menu');
   const isOpen = menu.classList.toggle('is-open');
   document.getElementById('level-menu-btn')
@@ -439,6 +442,96 @@ function closeLevelMenu() {
   if (!menu.classList.contains('is-open')) return;
   menu.classList.remove('is-open');
   document.getElementById('level-menu-btn').setAttribute('aria-expanded', 'false');
+}
+
+/* ---------------------------------------------------------------- *
+ * The language menu (Slice 5) — the mirror of the Level menu, in the
+ * title row's right cell. SINGLE-select, not multi: exactly one language
+ * is active, so tapping a line SETS the language rather than toggling it.
+ * The checked state is DERIVED from state.lang — the same trick the chips
+ * and levels use, so the check can't drift from the language on screen.
+ * ---------------------------------------------------------------- */
+
+/* The languages the app offers, in display order. Each line's label is the
+   language's OWN name (its autonym) — English, Українська, Русский — which
+   reads the same whatever the current UI language is. So, unlike the level
+   lines, these labels are set once (below), not re-written on every render. */
+const LANGUAGES = [
+  { code: 'en', labelId: 'lang_option_en' },
+  { code: 'uk', labelId: 'lang_option_uk' },
+  { code: 'ru', labelId: 'lang_option_ru' }
+];
+
+/* Build one line per language. Built once — the list never changes while the
+   app is open. Labels are the autonyms (identical across UI languages), so
+   they are written here; only the CHECK moves when you switch language. */
+function buildLanguageMenu() {
+  const panel = document.getElementById('lang-panel');
+  panel.innerHTML = '';
+
+  LANGUAGES.forEach(function (language) {
+    const opt = document.createElement('button');
+    opt.type = 'button';
+    opt.className = 'lang-opt';
+    opt.dataset.lang = language.code;
+    opt.setAttribute('aria-pressed', 'false');
+
+    const label = document.createElement('span');
+    label.className = 'lang-opt-label';
+    label.textContent = t(language.labelId);   // the autonym — language-independent
+
+    const check = document.createElement('span');
+    check.className = 'lang-check';
+    check.setAttribute('aria-hidden', 'true');
+    check.innerHTML =
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" ' +
+      'stroke="currentColor" stroke-width="3" stroke-linecap="round" ' +
+      'stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+
+    opt.appendChild(label);
+    opt.appendChild(check);
+    opt.addEventListener('click', function () { setLang(language.code); });
+    panel.appendChild(opt);
+  });
+}
+
+/* Checked state for every language line, derived from state.lang. */
+function renderLanguageMenu() {
+  document.querySelectorAll('#lang-panel .lang-opt').forEach(function (opt) {
+    const isOn = (opt.dataset.lang === state.lang);
+    opt.classList.toggle('is-selected', isOn);
+    opt.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+  });
+}
+
+/* Switch the whole app's language. Single-select: set, don't toggle.
+   Most of the app already relabels itself on every render (chips, card text,
+   the level lines all read state.lang through localized() / t()), so render()
+   sweeps them up for free. The exception is the FIXED text written once at
+   startup — the title, tap-hint, Prev/Next, the mode words, the empty-state,
+   and the two menu buttons — so applyStaticText() has to run again here. Every
+   string still lives in exactly one place; this re-reads them, never copies. */
+function setLang(code) {
+  if (code === state.lang) { closeLanguageMenu(); return; }
+  state.lang = code;
+  applyStaticText();     // the fixed labels that don't redraw on their own
+  closeLanguageMenu();
+  render();              // everything derived (chips, card, level lines) follows
+}
+
+function toggleLanguageMenu() {
+  closeLevelMenu();          // only one corner menu open at a time
+  const menu = document.getElementById('lang-menu');
+  const isOpen = menu.classList.toggle('is-open');
+  document.getElementById('lang-menu-btn')
+    .setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+function closeLanguageMenu() {
+  const menu = document.getElementById('lang-menu');
+  if (!menu || !menu.classList.contains('is-open')) return;
+  menu.classList.remove('is-open');
+  document.getElementById('lang-menu-btn').setAttribute('aria-expanded', 'false');
 }
 
 function renderCard() {
@@ -522,18 +615,29 @@ function attachEvents() {
       toggleLevelMenu();
     });
 
-  // A click anywhere outside the menu closes it — the expected behaviour for
-  // a pop-out. A click INSIDE the panel (on a level line) is left to bubble,
-  // so you can check several levels without the menu snapping shut.
+  // The language button mirrors the level button. stopPropagation keeps this
+  // click from reaching the document handler that would close what we opened.
+  document.getElementById('lang-menu-btn')
+    .addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleLanguageMenu();
+    });
+
+  // A click anywhere outside a menu closes THAT menu — the expected behaviour
+  // for a pop-out. A click INSIDE a panel (on a line) is left to bubble, so you
+  // can read the options without the menu snapping shut. Both corner menus are
+  // checked, each closing only when the click lands outside itself.
   document.addEventListener('click', function (e) {
-    const menu = document.getElementById('level-menu');
-    if (menu && !menu.contains(e.target)) closeLevelMenu();
+    const levelMenu = document.getElementById('level-menu');
+    if (levelMenu && !levelMenu.contains(e.target)) closeLevelMenu();
+    const langMenu = document.getElementById('lang-menu');
+    if (langMenu && !langMenu.contains(e.target)) closeLanguageMenu();
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'ArrowRight') goNext();
     else if (e.key === 'ArrowLeft') goPrev();
-    else if (e.key === 'Escape') closeLevelMenu();
+    else if (e.key === 'Escape') { closeLevelMenu(); closeLanguageMenu(); }
   });
 
   // Card width can change (orientation) — re-check whether the sound wraps.
