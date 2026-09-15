@@ -82,7 +82,14 @@ html, body {
 
 .app-title {
   margin: 0;
-  font-size: 2rem;
+  /* Fluid size. The title sits BETWEEN two corner controls, and a long
+     localized title (Ukrainian "Знаки Оголосу") crowds/wraps them on a
+     narrow phone. clamp() shrinks the title to fit the viewport instead of
+     a guessed breakpoint, so any future title length fits too. Capped at
+     2rem — desktop is unchanged; the floor keeps it readable on the
+     narrowest phones. If it's still tight (or too small) on a real device,
+     these three numbers are the dial. */
+  font-size: clamp(1.2rem, 5vw, 2rem);
   font-weight: 800;
   letter-spacing: 0.01em;
 }
