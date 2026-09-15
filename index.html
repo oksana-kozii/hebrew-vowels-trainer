@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nekudot</title>
-  <link rel="stylesheet" href="style.css?v=9" />
+  <link rel="stylesheet" href="style.css?v=10" />
 </head>
 <body>
   <!-- The whole app lives in one centered column. -->
@@ -12,12 +12,37 @@
 
     <!--
       HEADER — the title identifies the app; the tap-hint (the "Signifier")
-      tells you the card is tappable. Corner controls (Level ▾ left,
-      language ☰ right) arrive in later slices.
+      tells you the card is tappable.
+
+      CORNER CONTROLS live on the tap-hint's row, one in each side cell:
+      the Level (difficulty) menu is the FIRST of them, top-left. The
+      right-hand cell is reserved and empty for now — Slice 5's language
+      menu drops straight into it, mirroring this one, with no rework. The
+      hint sits centred between the two cells (both cells flex equally, so
+      the hint stays truly centred under the title).
     -->
     <header class="app-header">
       <h1 class="app-title" data-string="app_title">Nekudot</h1>
-      <p class="tap-hint" data-string="reveal_prompt">Tap the card to reveal the answer</p>
+
+      <div class="hint-row">
+        <!-- Level (difficulty) menu — top-left corner control. The lines
+             inside are built by app.js from the levels PRESENT in the data
+             (never hard-coded here), and their checked state is derived,
+             not stored. -->
+        <div class="level-menu" id="level-menu">
+          <button class="level-menu-btn" id="level-menu-btn"
+                  type="button" aria-haspopup="true" aria-expanded="false">
+            <span data-string="level_label">Level</span>
+            <span class="caret" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          </button>
+          <div class="level-panel" id="level-panel" role="group" aria-label="Level"></div>
+        </div>
+
+        <p class="tap-hint" data-string="reveal_prompt">Tap the card to reveal the answer</p>
+
+        <!-- Slice 5: the language menu goes here, mirroring the level menu. -->
+        <div class="header-slot header-slot-right" aria-hidden="true"></div>
+      </div>
     </header>
 
     <!--
@@ -61,8 +86,8 @@
     <!--
       EMPTY STATE — shown in place of the card, progress and controls when
       the filters match no cards, so the app never renders "Card 1 / 0".
-      The chip row deliberately stays visible above it: the way out has to
-      be on screen.
+      The chip row and the Level menu deliberately stay visible: the way
+      out has to be on screen.
     -->
     <p class="empty-state" id="empty-state" data-string="empty_state" hidden>No cards match — adjust filters</p>
 

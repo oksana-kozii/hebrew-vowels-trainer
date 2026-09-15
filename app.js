@@ -1,19 +1,30 @@
 'use strict';
 
 /* ------------------------------------------------------------------ *
- * Nekudot — behaviour (Slice 3)
+ * Nekudot — behaviour (Slice 4)
  *
- * Slice 2 built the study loop. Slice 3 adds the GROUP FILTER:
- *   • A row of chips built at runtime from groups.json — multi-select.
- *   • The deck becomes the UNION of the selected groups, kept in deck
- *     (card-ID) order, never in chip-tap order.
- *   • "All" means NO group filter. An empty selection means the same
- *     thing, so turning off your last chip lands you back on "All"
- *     rather than on an empty deck — that behaviour falls out of the
- *     rule; there is no special case for it in the code.
- *   • Everything downstream — the progress bar, "Card N / N", wrapping,
- *     shuffle — rescopes to the filtered deck on its own, because all
- *     of it reads state.order, and state.order is now the filtered set.
+ * Slice 2 built the study loop. Slice 3 added the GROUP FILTER. Slice 4
+ * adds the DIFFICULTY FILTER, and it is deliberately the group filter's
+ * TWIN, not a new mechanism:
+ *   • Difficulty is a second FACET. Levels are OR-ed with each other,
+ *     groups are OR-ed with each other, and the two results are AND-ed —
+ *     the standard "(Level 1 OR Level 2) AND (group A OR group B)" model.
+ *   • The deck is the UNION of the chosen levels, kept in deck (card-ID)
+ *     order, exactly as the group union already was.
+ *   • ONE place the two facets diverge, on purpose: an empty GROUP
+ *     selection means "all groups", but an empty LEVEL selection falls to
+ *     {Level 1} — a real filter, not "all". Levels are ordinal (there is a
+ *     floor to stand on); groups are nominal (no natural first one). So a
+ *     fresh app opens on Level 1, and turning off your last level lands you
+ *     back on Level 1, never on an empty deck.
+ *   • The Level menu is DATA-DRIVEN: its lines are the distinct level
+ *     values present in the cards, sorted — never a hard-coded {1,2,3}.
+ *     Add a card that carries level 3 and a "Level 3" line appears on its
+ *     own.
+ *   • The menu's checked state is DERIVED from the effective level set,
+ *     never stored — the same trick the "All" chip uses. That is why
+ *     Level 1 shows checked whenever nothing is selected: the deck on
+ *     screen *is* level-1-only, so the menu must say so.
  * ------------------------------------------------------------------ */
 
 /* --- Configuration --- */
@@ -26,7 +37,8 @@ const CONFIG = {
 /* --- State ---
    One source of truth for "which card": an ORDER (list of card positions)
    plus a POSITION pointer. The card on screen is cards[order[position]].
-   New in Slice 3: selectedGroups, the one input the filter reads. */
+   Slice 3 added selectedGroups; Slice 4 adds selectedLevels — the two
+   inputs the filter reads. */
 const state = {
   cards: [],
   groups: [],
@@ -34,7 +46,8 @@ const state = {
   lang: CONFIG.defaultLang,
 
   mode: 'inorder',           // 'inorder' | 'shuffle'
-  selectedGroups: new Set(), // group ids; EMPTY = no filter = every card
+  selectedGroups: new Set(), // group ids; EMPTY = no filter = every group
+  selectedLevels: new Set(), // level numbers; EMPTY = {Level 1}, NOT "all"
   order: [],                 // card positions, in display order
   position: 0,               // where we are in `order`
   revealed: false,           // is the current card's answer showing?
@@ -55,6 +68,7 @@ async function init() {
     state.uiStrings = uiStrings;
 
     buildChips();          // one button per group, from the data
+    buildLevelMenu();      // one line per level PRESENT in the data
     buildOrder();          // builds the filtered order AND starts the first pass
     applyStaticText();     // fixed labels: title, tap-hint, button words
     attachEvents();
@@ -94,7 +108,7 @@ function applyStaticText() {
 }
 
 /* ---------------------------------------------------------------- *
- * The group filter
+ * The group filter (facet 1)
  * ---------------------------------------------------------------- */
 
 function groupById(id) {
@@ -116,18 +130,51 @@ function allowedCardIds() {
   return ids;
 }
 
-/* Positions of the cards that pass the filter, in DECK order.
+/* ---------------------------------------------------------------- *
+ * The difficulty filter (facet 2) — the twin of the group facet
+ * ---------------------------------------------------------------- */
+
+/* The distinct levels present in the cards, sorted ascending. This is what
+   the Level menu is built from — never a hard-coded list — so the set of
+   lines always matches the data. A card carrying a brand-new level makes a
+   brand-new line appear with no code change. */
+function availableLevels() {
+  const set = new Set();
+  state.cards.forEach(function (card) { set.add(card.level); });
+  return Array.from(set).sort(function (a, b) { return a - b; });
+}
+
+/* The level set the filter actually uses right now.
+   The one divergence from groups: an empty selection is NOT "allow all" —
+   it falls to {Level 1}. Everything reads from THIS set: the filter below,
+   and the menu's checked state. Because the menu reads the effective set
+   (not the raw selection), Level 1 shows checked whenever nothing is
+   chosen — the display can't drift from what's on screen. */
+function effectiveLevels() {
+  return state.selectedLevels.size > 0 ? state.selectedLevels : new Set([1]);
+}
+
+/* ---------------------------------------------------------------- *
+ * Combining the two facets
+ * ---------------------------------------------------------------- */
+
+/* Positions of the cards that pass BOTH facets, in DECK order.
    Walking cards.json and testing each card — rather than walking the
-   selected groups and collecting their cards — is what keeps the deck in
-   card-ID order no matter which chip was tapped first. It also means a
-   group pointing at a card ID that doesn't exist simply matches nothing,
-   instead of crashing.
-   Slice 4 adds the difficulty test to the same `if`. */
+   selected groups/levels and collecting their cards — is what keeps the
+   deck in card-ID order no matter which chip or level was tapped first. It
+   also means a group pointing at a card ID that doesn't exist simply
+   matches nothing, instead of crashing.
+   The two tests are the same shape (set membership), pointed at different
+   fields, and both must pass — OR within each facet, AND across them. */
 function activePositions() {
-  const allowed = allowedCardIds();
+  const allowed = allowedCardIds();   // group facet: null = "all groups"
+  const levels  = effectiveLevels();  // level facet: never "all"; empty -> {1}
+
   const positions = [];
   state.cards.forEach(function (card, i) {
-    if (allowed === null || allowed.has(card.id)) positions.push(i);
+    const inGroups = (allowed === null) || allowed.has(card.id); // OR within groups
+    const inLevels = levels.has(card.level);                     // OR within levels
+    if (inGroups && inLevels) positions.push(i);                 // AND across facets
   });
   return positions;
 }
@@ -152,11 +199,25 @@ function selectAllGroups() {
   render();
 }
 
+/* Tap a level line: turn that level on or off, then re-deal.
+   There is no "All levels" clear button and none is needed — the empty =
+   {Level 1} rule IS the reset. Turn off your last level and you land on
+   Level 1, never on nothing. Selecting every level is how you get "all". */
+function toggleLevel(level) {
+  if (state.selectedLevels.has(level)) {
+    state.selectedLevels.delete(level);
+  } else {
+    state.selectedLevels.add(level);
+  }
+  buildOrder();
+  render();
+}
+
 /* ---------------------------------------------------------------- *
  * The deck order and the "pass"
  * ---------------------------------------------------------------- */
 
-/* Build the order for the current filter + mode, then start a fresh pass.
+/* Build the order for the current filters + mode, then start a fresh pass.
    In order -> deck order; Shuffle -> a random permutation (each card once). */
 function buildOrder() {
   const positions = activePositions();
@@ -208,9 +269,8 @@ function toggleReveal() {
 
 /* Next: step forward; off the last card, start a NEW lap (reshuffling in
    Shuffle mode). A new lap resets the progress bar.
-   Slice 3 fix: the reshuffle now re-deals the FILTERED deck. It used to
-   reach for the whole deck — harmless while nothing could filter it, and
-   it would have quietly undone the filter the moment something could. */
+   The reshuffle re-deals activePositions(), so it respects BOTH facets on
+   its own — nothing here had to change for Slice 4. */
 function goNext() {
   if (state.order.length === 0) return;
 
@@ -220,7 +280,7 @@ function goNext() {
     markCurrentSeen();
   } else {
     if (state.mode === 'shuffle') {
-      state.order = shuffle(activePositions());   // fresh random lap, same filter
+      state.order = shuffle(activePositions());   // fresh random lap, same filters
     }
     startPass();                                  // back to first, progress cleared
   }
@@ -252,16 +312,15 @@ function setMode(mode) {
  * Rendering — draw the screen FROM state.
  * ---------------------------------------------------------------- */
 function render() {
-  // A filter can in principle select nothing. Groups alone can't do it
-  // (an empty selection means "All"), so today this is a safety net rather
-  // than a route the learner can take; Slice 4's difficulty filter is what
-  // can genuinely empty a deck. Either way the app shows a message instead
-  // of a broken card and a "Card 1 / 0".
+  // With two facets live, a filter CAN now select nothing — e.g. the Shva
+  // group (one level-1 card) with only Level 2 chosen. The app shows the
+  // empty-state message instead of a broken card and a "Card 1 / 0".
   const isEmpty = state.order.length === 0;
   document.getElementById('app').classList.toggle('is-empty', isEmpty);
   document.getElementById('empty-state').hidden = !isEmpty;
 
   renderChips();
+  renderLevelMenu();        // both facets' controls stay reachable, empty or not
   if (!isEmpty) {
     renderCard();
     renderProgress();
@@ -314,6 +373,74 @@ function renderChips() {
   });
 }
 
+/* Build one line per level PRESENT in the data (availableLevels), each a
+   toggle. Built once — the levels in the data don't change while the app is
+   open. Labels + checks are written on every render (renderLevelMenu), the
+   same derive-the-display pattern the chips use, so Slice 5's language
+   toggle relabels them for free. Each line carries a check that reserves
+   its slot even when hidden, so toggling never reflows the row. */
+function buildLevelMenu() {
+  const panel = document.getElementById('level-panel');
+  panel.innerHTML = '';
+
+  availableLevels().forEach(function (level) {
+    const opt = document.createElement('button');
+    opt.type = 'button';
+    opt.className = 'level-opt';
+    opt.dataset.level = String(level);
+    opt.setAttribute('aria-pressed', 'false');
+
+    const label = document.createElement('span');
+    label.className = 'level-opt-label';   // filled (localized) on render
+
+    const check = document.createElement('span');
+    check.className = 'level-check';
+    check.setAttribute('aria-hidden', 'true');
+    check.innerHTML =
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" ' +
+      'stroke="currentColor" stroke-width="3" stroke-linecap="round" ' +
+      'stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+
+    opt.appendChild(label);
+    opt.appendChild(check);
+    opt.addEventListener('click', function () { toggleLevel(level); });
+    panel.appendChild(opt);
+  });
+}
+
+/* Label + checked state for every level line, read from the EFFECTIVE set.
+   Reading the effective set (not the raw selection) is what makes Level 1
+   show checked when nothing is selected: the deck is level-1-only, so the
+   menu says so. Same reason the "All" chip lights with nothing selected. */
+function renderLevelMenu() {
+  const effective = effectiveLevels();
+  document.querySelectorAll('#level-panel .level-opt').forEach(function (opt) {
+    const level = Number(opt.dataset.level);
+    opt.querySelector('.level-opt-label').textContent =
+      t('level_n').replace('{n}', String(level));
+
+    const isOn = effective.has(level);
+    opt.classList.toggle('is-selected', isOn);
+    opt.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+  });
+}
+
+/* Open / close the Level fold-out. aria-expanded tells a screen reader
+   whether the panel is showing; the caret rotation is the visual echo. */
+function toggleLevelMenu() {
+  const menu = document.getElementById('level-menu');
+  const isOpen = menu.classList.toggle('is-open');
+  document.getElementById('level-menu-btn')
+    .setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+function closeLevelMenu() {
+  const menu = document.getElementById('level-menu');
+  if (!menu.classList.contains('is-open')) return;
+  menu.classList.remove('is-open');
+  document.getElementById('level-menu-btn').setAttribute('aria-expanded', 'false');
+}
+
 function renderCard() {
   const card = currentCard();
   if (!card) return;
@@ -354,7 +481,7 @@ function fitSound() {
 function renderProgress() {
   // "Seen" = distinct cards viewed in the CURRENT pass, out of the CURRENT
   // filtered deck. Both numbers come from state.order, so the bar rescoped
-  // itself the moment the filter started shaping that list.
+  // itself the moment the filters started shaping that list.
   const total = state.order.length;
   const seen = state.seen.size;
   const percent = total ? Math.round((seen / total) * 100) : 0;
@@ -386,9 +513,27 @@ function attachEvents() {
   document.getElementById('mode-shuffle')
     .addEventListener('click', function () { setMode('shuffle'); });
 
+  // The Level menu button toggles the fold-out. stopPropagation keeps this
+  // click from immediately reaching the document handler below (which would
+  // otherwise close what we just opened).
+  document.getElementById('level-menu-btn')
+    .addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleLevelMenu();
+    });
+
+  // A click anywhere outside the menu closes it — the expected behaviour for
+  // a pop-out. A click INSIDE the panel (on a level line) is left to bubble,
+  // so you can check several levels without the menu snapping shut.
+  document.addEventListener('click', function (e) {
+    const menu = document.getElementById('level-menu');
+    if (menu && !menu.contains(e.target)) closeLevelMenu();
+  });
+
   document.addEventListener('keydown', function (e) {
     if (e.key === 'ArrowRight') goNext();
     else if (e.key === 'ArrowLeft') goPrev();
+    else if (e.key === 'Escape') closeLevelMenu();
   });
 
   // Card width can change (orientation) — re-check whether the sound wraps.
