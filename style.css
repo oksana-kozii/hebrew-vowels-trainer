@@ -112,7 +112,8 @@ html, body {
   margin: 6px 0 0;           /* its own full-width row under the title row */
   text-align: center;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.85rem;        /* match the "Viewed: …%" progress line */
+  font-style: italic;
 }
 
 /* The reserved right cell — the mirror of the Level menu's side. Empty

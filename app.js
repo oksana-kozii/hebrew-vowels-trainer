@@ -488,8 +488,8 @@ function buildLanguageMenu() {
       'stroke="currentColor" stroke-width="3" stroke-linecap="round" ' +
       'stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
 
-    opt.appendChild(label);
-    opt.appendChild(check);
+    opt.appendChild(check);   // check BEFORE the label — mirrors the Level menu
+    opt.appendChild(label);   // (space-between then pushes the label to the right)
     opt.addEventListener('click', function () { setLang(language.code); });
     panel.appendChild(opt);
   });
