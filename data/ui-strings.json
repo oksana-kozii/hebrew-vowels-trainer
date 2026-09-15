@@ -34,10 +34,15 @@
     "uk": "Рівень 1",
     "ru": "Уровень 1"
   },
-  "difficulty_1_2": {
-    "en": "Levels 1–2",
-    "uk": "Рівні 1–2",
-    "ru": "Уровни 1–2"
+  "level_label": {
+    "en": "Level",
+    "uk": "Рівень",
+    "ru": "Уровень"
+  },
+  "level_n": {
+    "en": "Level {n}",
+    "uk": "Рівень {n}",
+    "ru": "Уровень {n}"
   },
   "reveal_prompt": {
     "en": "Tap the card to reveal the answer",
