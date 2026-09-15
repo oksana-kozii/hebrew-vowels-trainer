@@ -70,42 +70,27 @@ html, body {
   gap: 16px;
 }
 
-/* Header — the title row (with the corner controls) on top, then the
-   tap-hint on its own row below. `position: relative` isn't needed by the
-   header itself (the fold-out anchors to .level-menu), but it keeps the
-   header a self-contained stacking context, harmless and future-proof. */
+/* Header — the two corner controls are pinned to the top corners (absolute),
+   the title spans the full width below them, and the tap-hint sits under the
+   title. `position: relative` makes the header the box those absolute corners
+   position against; `padding-top` reserves the top strip they occupy so the
+   in-flow title starts below them. */
 .app-header {
   width: 100%;
   text-align: center;
   position: relative;
+  padding-top: 52px;         /* reserve the top strip for the pinned corner controls */
 }
 
 .app-title {
   margin: 0;
-  /* Fluid size. The title sits BETWEEN two corner controls, and a long
-     localized title (Ukrainian "Знаки Оголосу") crowds/wraps them on a
-     narrow phone. clamp() shrinks the title to fit the viewport instead of
-     a guessed breakpoint, so any future title length fits too. Capped at
-     2rem — desktop is unchanged; the floor keeps it readable on the
-     narrowest phones. If it's still tight (or too small) on a real device,
-     these three numbers are the dial. */
-  font-size: clamp(1.2rem, 5vw, 2rem);
+  /* Fluid size, capped at 2rem. With the corner controls now pinned ABOVE
+     the title (not beside it), the title has the full width and no longer has
+     to shrink to fit between them — so the floor is back near full size and
+     only eases on very narrow phones. These three numbers are the dial. */
+  font-size: clamp(1.6rem, 7vw, 2rem);
   font-weight: 800;
   letter-spacing: 0.01em;
-}
-
-/* The title row: a left cell (Level menu), the centred title, a right cell
-   (reserved for the language menu, Slice 5). The two side cells flex
-   EQUALLY (flex: 1), so the title — sized to its own content — sits
-   dead-centre regardless of what the side cells hold. The corners live on
-   the title's row, so the longer tap-hint below gets a full width of its
-   own and never collides with a control. */
-.title-row {
-  width: 100%;
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .tap-hint {
@@ -116,24 +101,13 @@ html, body {
   font-style: italic;
 }
 
-/* The reserved right cell — the mirror of the Level menu's side. Empty
-   until Slice 5 fills it, but it claims its half of the row now so the
-   title is centred, not pushed right by the left control. */
-.header-slot-right {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
 /* -------- Level (difficulty) menu — the first corner control -------- */
-/* Sits in the left cell, pinned to the left edge; it is the anchor for its
-   own fold-out. flex: 1 claims the mirror half; justify-content: flex-start
-   keeps the button itself at the far left. */
+/* Pinned to the header's top-LEFT, out of flow. Being absolute also makes it
+   the positioning context for its own fold-out panel below. */
 .level-menu {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  justify-content: flex-start;
-  position: relative;        /* anchor for the fold-out panel */
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 /* The collapsed button: an outlined pill on the card white, the same quiet
@@ -209,6 +183,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  white-space: nowrap;         /* keep localized labels ("Уровень 1") on one line — the panel widens to fit */
   width: 100%;
   min-height: 46px;
   padding: 10px 14px;
@@ -260,11 +235,9 @@ html, body {
    that's the bug. (The shared chrome is duplicated for now; a later refactor
    commit could fold both into one selector.) */
 .lang-menu {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  justify-content: flex-end;   /* button hugs the right edge — mirror of Level's flex-start */
-  position: relative;          /* anchor for the fold-out panel */
+  position: absolute;
+  top: 0;
+  right: 0;                    /* mirror of the Level menu's left: 0 */
 }
 
 .lang-menu-btn {
@@ -329,6 +302,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  white-space: nowrap;         /* keep language names ("Українська") on one line — the panel widens to fit */
   width: 100%;
   min-height: 46px;
   padding: 10px 14px;
