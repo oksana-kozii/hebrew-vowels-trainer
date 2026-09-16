@@ -506,7 +506,6 @@ html, body {
   font-weight: 600;
   line-height: 1.3;
   opacity: 0;
-  transition: opacity 0.25s ease;
   pointer-events: none;
 }
 
@@ -530,7 +529,6 @@ html, body {
   font-weight: 700;
   line-height: 1.1;
   opacity: 0;
-  transition: opacity 0.25s ease;
   pointer-events: none;
 }
 
@@ -542,9 +540,20 @@ html, body {
   font-size: 2.2rem;
 }
 
+/* Reveal is a fade-IN animation that plays only when the card BECOMES
+   revealed — not a two-way transition. So revealing fades the answer in, while
+   hiding it, or moving to the next card, drops it instantly. That's the fix for
+   the flash: the next card's answer can no longer fade out during the change,
+   because there's no fade-out at all. */
 .card.is-revealed .card-name,
 .card.is-revealed .card-sound {
   opacity: 1;
+  animation: answer-fade-in 0.25s ease;
+}
+
+@keyframes answer-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .card-position {

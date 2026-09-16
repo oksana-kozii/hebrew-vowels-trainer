@@ -48,10 +48,12 @@ const state = {
   mode: 'inorder',           // 'inorder' | 'shuffle'
   selectedGroups: new Set(), // group ids; EMPTY = no filter = every group
   selectedLevels: new Set(), // level numbers; EMPTY = {Level 1}, NOT "all"
-  order: [],                 // card positions, in display order
-  position: 0,               // where we are in `order`
+  order: [],                 // the current lap's card positions (reshuffled each new lap in shuffle mode)
+  lapCursor: 0,              // frontier: how far into `order` we've dealt this lap
+  trail: [],                 // the cards actually visited, in order — spans laps; Back/Next walk this
+  trailPos: 0,               // which trail entry is on screen
   revealed: false,           // is the current card's answer showing?
-  seen: new Set()            // ids of cards seen in the CURRENT pass
+  seen: new Set()            // ids of cards seen going forward in the CURRENT lap (drives the progress bar)
 };
 
 /* --- Start here --- */
@@ -228,9 +230,20 @@ function buildOrder() {
 
 /* Begin a new pass: back to the first card, hidden, progress cleared. */
 function startPass() {
-  state.position = 0;
+  state.lapCursor = 0;
   state.revealed = false;
-  state.seen = new Set();     // per-pass reset — this is what makes the bar restart
+  state.seen = new Set();     // per-lap reset — this is what makes the bar restart
+
+  if (state.order.length === 0) {
+    state.trail = [];
+    state.trailPos = 0;
+    return;
+  }
+
+  // The trail begins with the first card of the lap; n/m is its slot in the lap,
+  // stored so the "Card N / M" line stays right even after you walk back.
+  state.trail = [{ card: state.order[0], n: 1, m: state.order.length }];
+  state.trailPos = 0;
   markCurrentSeen();
 }
 
@@ -247,7 +260,8 @@ function shuffle(input) {
 }
 
 function currentCard() {
-  return state.cards[state.order[state.position]];
+  const entry = state.trail[state.trailPos];
+  return entry ? state.cards[entry.card] : undefined;
 }
 
 /* Record the current card as seen this pass (a Set, so it's idempotent —
@@ -275,16 +289,32 @@ function toggleReveal() {
 function goNext() {
   if (state.order.length === 0) return;
 
-  if (state.position < state.order.length - 1) {
-    state.position += 1;
-    state.revealed = false;
-    markCurrentSeen();
+  if (state.trailPos < state.trail.length - 1) {
+    // Behind the frontier (we went Back earlier) — re-walk forward through the
+    // cards already visited, in the same order, so Next exactly undoes a Back.
+    state.trailPos += 1;
   } else {
-    if (state.mode === 'shuffle') {
-      state.order = shuffle(activePositions());   // fresh random lap, same filters
+    // At the frontier — deal the next NEW card. Advance within the lap; when the
+    // lap is used up, start a fresh lap (reshuffled in shuffle mode) and restart
+    // the progress bar. The old cards stay in the trail, so Back still reaches them.
+    state.lapCursor += 1;
+    if (state.lapCursor >= state.order.length) {
+      if (state.mode === 'shuffle') {
+        state.order = shuffle(activePositions());   // fresh random lap, same filters
+      }
+      state.lapCursor = 0;
+      state.seen = new Set();                        // new lap → progress restarts
     }
-    startPass();                                  // back to first, progress cleared
+    state.trail.push({
+      card: state.order[state.lapCursor],
+      n: state.lapCursor + 1,
+      m: state.order.length
+    });
+    state.trailPos = state.trail.length - 1;
+    markCurrentSeen();
   }
+
+  state.revealed = false;
   render();
 }
 
@@ -292,12 +322,10 @@ function goNext() {
    so progress is not reset (going back is reviewing, not restarting). */
 function goPrev() {
   if (state.order.length === 0) return;
+  if (state.trailPos === 0) return;   // nothing before the first card of the pass — Back does nothing here
 
-  state.position = (state.position > 0)
-    ? state.position - 1
-    : state.order.length - 1;
+  state.trailPos -= 1;                 // step to the ACTUAL previous card, whatever the shuffle did
   state.revealed = false;
-  markCurrentSeen();
   render();
 }
 
@@ -550,9 +578,10 @@ function renderCard() {
 
   document.getElementById('card').classList.toggle('is-revealed', state.revealed);
 
+  const entry = state.trail[state.trailPos];
   const position = t('card_position')
-    .replace('{n}', String(state.position + 1))
-    .replace('{m}', String(state.order.length));
+    .replace('{n}', String(entry.n))
+    .replace('{m}', String(entry.m));
   document.getElementById('card-position').textContent = position;
 }
 
