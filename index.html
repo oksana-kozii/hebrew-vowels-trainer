@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nekudot</title>
-  <link rel="stylesheet" href="style.css?v=16" />
+  <link rel="stylesheet" href="style.css?v=17" />
 </head>
 <body>
   <!-- The whole app lives in one centered column. -->
@@ -79,12 +79,40 @@
       are a separate layer: always present, invisible until reveal, faded
       in so the pictogram never moves. The rare badge is a later slice.
     -->
-    <section class="card" id="card">
-      <p class="card-name" id="card-name"></p>
+    <section class="card" id="card" tabindex="0" aria-expanded="false">
+      <!--
+        TOP ROW — the revealed NAME (top-left, fades in on reveal) and the
+        RARE BADGE (top-right, shown only on rare cards) share one flex row.
+        Space-between + a min-width:0 name means a long localized name and a
+        long localized badge word (e.g. Russian "реже используется") SEPARATE
+        instead of overlapping — the name yields and wraps, the badge keeps its
+        width. The row is pointer-events:none so a tap anywhere still reaches
+        the card beneath it.
+      -->
+      <div class="card-top">
+        <!-- aria-hidden flips to false only on reveal (app.js). opacity:0 does
+             NOT hide text from a screen reader, so without this the answer name
+             would be announced before the user asked for it. -->
+        <p class="card-name" id="card-name" aria-hidden="true"></p>
+        <!-- The ★ is constant (decorative, hidden from AT); the word is
+             localized from badge_rare the same way every label is. The whole
+             badge is `hidden` until app.js sees a rare card. -->
+        <p class="card-badge" id="card-badge" hidden>
+          <span class="badge-star" aria-hidden="true">★</span>
+          <span class="badge-word" data-string="badge_rare">rare</span>
+        </p>
+      </div>
+
       <div class="card-figure">
+        <!-- alt is a NEUTRAL, constant label (card_alt), set by app.js. It must
+             never name the mark: the name is the answer, and alt is read aloud
+             before reveal. -->
         <img class="pictogram" id="pictogram" src="" alt="" />
       </div>
-      <p class="card-sound" id="card-sound"></p>
+
+      <!-- Same aria-hidden-until-reveal rule as the name (the sound is the
+           other half of the answer). -->
+      <p class="card-sound" id="card-sound" aria-hidden="true"></p>
       <p class="card-position" id="card-position"></p>
     </section>
 
@@ -126,6 +154,6 @@
 
   </main>
 
-  <script src="app.js?v=14"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>

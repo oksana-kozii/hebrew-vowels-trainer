@@ -1,5 +1,10 @@
 /* ------------------------------------------------------------------ *
- * Nekudot — appearance (Slice 4)
+ * Nekudot — appearance (Slice 6)
+ * Slice 6 adds the quiet rare badge and a flex card-top row so the revealed
+ * name and the badge never overlap. The look here is a placeholder — the UI
+ * design session that follows folds badge, type sizes and colours into tokens.
+ *
+ * (Original Slice 4 notes follow.)
  * The calm, near-monochrome look carried from V9. Slice 4 adds:
  *   • a corner-control header — the title shares its row with a top-left
  *     Level (difficulty) menu and a reserved right cell for Slice 5's
@@ -488,13 +493,30 @@ html, body {
   transform-origin: center;
 }
 
-/* Revealed NAME — overlaid at top-left, the accent blue lightened. */
-.card-name {
+/* TOP ROW — holds the revealed NAME (left) and the RARE BADGE (right) in one
+   flex row, replacing the old single absolute overlay. space-between keeps them
+   apart; a min-width:0 name yields and wraps before it can slide under the
+   badge, so a long localized name AND a long localized badge word coexist
+   (Gotcha: localized strings run longer than English). pointer-events:none so
+   a tap lands on the card, not on this row. */
+.card-top {
   position: absolute;
   top: 18px;
   left: 22px;
   right: 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+/* Revealed NAME — accent blue lightened, painted into the letters. Now a flex
+   child (was absolute). min-width:0 is what lets it shrink/wrap inside its cell
+   instead of pushing the badge off the card. */
+.card-name {
   margin: 0;
+  min-width: 0;
   text-align: left;
   /* the accent gradient (lightened) painted into the letters themselves */
   background-image: linear-gradient(135deg, var(--accent-start-light), var(--accent-end-light));
@@ -505,8 +527,43 @@ html, body {
   font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.3;
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0;                          /* fades in on reveal (rule below) */
+}
+
+/* RARE BADGE — top-right, shown only on rare cards. Deliberately QUIET: a soft
+   outlined chip with one accent star, not a shout. It is intentionally
+   under-styled here — the UI design session folds it into the design system,
+   so this is a placeholder look, not a final one. flex:none keeps it at its
+   natural width so the name yields, never the badge. */
+.card-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--track);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* The `hidden` attribute must beat `display: inline-flex` above, or a common
+   card would still show an empty chip. `.card-badge[hidden]` (class + attribute)
+   outranks the bare `.card-badge` class on specificity, so this wins — the fix
+   is specificity, not source order. */
+.card-badge[hidden] {
+  display: none;
+}
+
+.badge-star {
+  color: var(--accent-start);   /* the single spot of accent in the quiet chip */
+  font-size: 0.9rem;
+  line-height: 1;
 }
 
 /* Revealed SOUND — the star of the answer: large, blue, sitting in the

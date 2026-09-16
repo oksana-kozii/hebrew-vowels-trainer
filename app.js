@@ -1,7 +1,12 @@
 'use strict';
 
 /* ------------------------------------------------------------------ *
- * Nekudot — behaviour (Slice 4)
+ * Nekudot — behaviour (Slice 6)
+ *
+ * Since the Slice 4 notes below: Slice 5 added the language toggle; Slice 6
+ * adds the RARE BADGE (localized), fixes the ANSWER-LEAK to screen readers
+ * (neutral pictogram alt + aria-hidden answer until reveal), makes the reveal
+ * KEYBOARD-operable, and cache-busts the DATA files (CONFIG.dataVersion).
  *
  * Slice 2 built the study loop. Slice 3 added the GROUP FILTER. Slice 4
  * adds the DIFFICULTY FILTER, and it is deliberately the group filter's
@@ -31,7 +36,11 @@
 const CONFIG = {
   dataPath: 'data/',
   imagePath: 'img/',
-  defaultLang: 'en'
+  defaultLang: 'en',
+  // Cache-buster for the DATA files, the same idea as ?v=NN on style.css /
+  // app.js — but the data had none, so a changed JSON could be served stale
+  // from the CDN. Bump this whenever a JSON file's contents change.
+  dataVersion: '17'
 };
 
 /* --- State ---
@@ -59,10 +68,11 @@ const state = {
 /* --- Start here --- */
 async function init() {
   try {
+    const v = '?v=' + CONFIG.dataVersion;   // same cache-buster the CSS/JS use
     const [cards, groups, uiStrings] = await Promise.all([
-      loadJson(CONFIG.dataPath + 'cards.json'),
-      loadJson(CONFIG.dataPath + 'groups.json'),
-      loadJson(CONFIG.dataPath + 'ui-strings.json')
+      loadJson(CONFIG.dataPath + 'cards.json' + v),
+      loadJson(CONFIG.dataPath + 'groups.json' + v),
+      loadJson(CONFIG.dataPath + 'ui-strings.json' + v)
     ]);
 
     state.cards = cards;
@@ -568,15 +578,32 @@ function renderCard() {
 
   const pictogram = document.getElementById('pictogram');
   pictogram.src = CONFIG.imagePath + card.picture;
-  pictogram.alt = localized(card.name);
+  // NEUTRAL alt — never localized(card.name). The name is the answer, and alt
+  // is spoken before the user reveals; naming the mark here leaks it (Slice 6).
+  pictogram.alt = t('card_alt');
 
   // Revealed text set every render, even while hidden, so it's in place
   // the instant the reveal fades it in.
-  document.getElementById('card-name').textContent = localized(card.name);
-  document.getElementById('card-sound').textContent = localized(card.sound);
+  const nameEl = document.getElementById('card-name');
+  const soundEl = document.getElementById('card-sound');
+  nameEl.textContent = localized(card.name);
+  soundEl.textContent = localized(card.sound);
   fitSound();   // shrink the sound letter if this string wraps to two lines
 
-  document.getElementById('card').classList.toggle('is-revealed', state.revealed);
+  // Rare badge: the boolean decides WHETHER it shows; the localized word (set
+  // by applyStaticText from badge_rare) decides WHAT it says. Same on/off cue
+  // for a screen reader as visually — a common card has no badge in either.
+  document.getElementById('card-badge').hidden = !card.rare;
+
+  const isRevealed = state.revealed;
+  document.getElementById('card').classList.toggle('is-revealed', isRevealed);
+
+  // Accessibility: match the a11y tree to what's visually shown. opacity:0
+  // still leaves text readable by a screen reader, so we aria-hide the answer
+  // until reveal; aria-expanded on the card mirrors the open/closed state.
+  document.getElementById('card').setAttribute('aria-expanded', String(isRevealed));
+  nameEl.setAttribute('aria-hidden', String(!isRevealed));
+  soundEl.setAttribute('aria-hidden', String(!isRevealed));
 
   const entry = state.trail[state.trailPos];
   const position = t('card_position')
@@ -628,6 +655,16 @@ function renderControls() {
  * ---------------------------------------------------------------- */
 function attachEvents() {
   document.getElementById('card').addEventListener('click', toggleReveal);
+
+  // The card reveals on any pointer tap; make it keyboard/switch operable too.
+  // Enter or Space toggles the reveal. Space is a page-scroll key by default
+  // when an element is focused, so preventDefault stops the jump.
+  document.getElementById('card').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      toggleReveal();
+    }
+  });
   document.getElementById('btn-prev').addEventListener('click', goPrev);
   document.getElementById('btn-next').addEventListener('click', goNext);
   document.getElementById('mode-inorder')
