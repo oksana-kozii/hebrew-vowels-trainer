@@ -40,7 +40,7 @@ const CONFIG = {
   // Cache-buster for the DATA files, the same idea as ?v=NN on style.css /
   // app.js — but the data had none, so a changed JSON could be served stale
   // from the CDN. Bump this whenever a JSON file's contents change.
-  dataVersion: '17'
+  dataVersion: '18'
 };
 
 /* --- State ---
