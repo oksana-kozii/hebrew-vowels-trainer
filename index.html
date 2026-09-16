@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nekudot</title>
-  <link rel="stylesheet" href="style.css?v=17" />
+  <link rel="stylesheet" href="style.css?v=18" />
 </head>
 <body>
   <!-- The whole app lives in one centered column. -->
@@ -74,12 +74,15 @@
     </section>
 
     <!--
-      THE CARD — tap anywhere on it to reveal / hide the answer.
-      The revealed NAME (top-left) and SOUND (lower band, beneath the mark)
-      are a separate layer: always present, invisible until reveal, faded
-      in so the pictogram never moves. The rare badge is a later slice.
+      THE CARD — tap it, or focus it and press Enter / Space, to reveal or
+      hide the answer. role="button" + aria-expanded make it a proper
+      DISCLOSURE control for assistive tech: a screen reader announces it as a
+      collapsed/expanded button, and the keyboard handler in app.js drives it.
+      The revealed NAME (top-left) and SOUND (lower band, beneath the mark) are
+      a separate layer: always present, invisible (and aria-hidden) until
+      reveal, faded in so the pictogram never moves.
     -->
-    <section class="card" id="card" tabindex="0" aria-expanded="false">
+    <section class="card" id="card" role="button" tabindex="0" aria-expanded="false">
       <!--
         TOP ROW — the revealed NAME (top-left, fades in on reveal) and the
         RARE BADGE (top-right, shown only on rare cards) share one flex row.
