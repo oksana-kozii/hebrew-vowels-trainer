@@ -663,6 +663,16 @@ html, body {
   pointer-events: none;
 }
 
+/* The ru/uk sounds are Cyrillic CAPITALS (А, Э, І, О, У) — full cap-height,
+   where the English sounds are lowercase (a, i, u) at x-height. Same font-size,
+   but the caps stand taller, so on the shortened card they ride up into the
+   mark. Trim them ~23%; English keeps the full size. :not(.is-two-line) leaves
+   the wrapped-Shva shrink (2.2rem) alone — re-enlarging it would undo that. */
+.card-sound:lang(ru):not(.is-two-line),
+.card-sound:lang(uk):not(.is-two-line) {
+  font-size: calc(var(--text-display) * 0.77);   /* --text-display − 23%; tune 0.77 on the phone */
+}
+
 /* When a sound string is long enough to wrap onto a second line (Shva), app.js
    adds this class so the text shrinks and stays clear of the mark. A one-off
    step, NOT a scale rung — it's the wrapped-sound shrink and nothing else uses
