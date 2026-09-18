@@ -137,7 +137,7 @@ html, body {
 .app {
   max-width: var(--app-max);
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;   /* was 100dvh */
   margin: 0 auto;
   padding: var(--space-6);          /* was 22/26 — snapped to a uniform 24 */
   display: flex;
