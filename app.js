@@ -552,6 +552,7 @@ function renderLanguageMenu() {
 function setLang(code) {
   if (code === state.lang) { closeLanguageMenu(); return; }
   state.lang = code;
+  document.documentElement.lang = code;   // keep <html lang> honest + a CSS hook for :lang() rules
   applyStaticText();     // the fixed labels that don't redraw on their own
   closeLanguageMenu();
   render();              // everything derived (chips, card, level lines) follows
