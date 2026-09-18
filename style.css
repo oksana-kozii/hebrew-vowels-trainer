@@ -712,7 +712,7 @@ html, body {
 
 .btn {
   flex: 1;
-  min-height: var(--tap-min);
+  min-height: calc(var(--tap-min) + 2px);   /* 48 — the two steppers only */
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-base);
   font-weight: 600;
