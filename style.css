@@ -119,14 +119,14 @@ html, body {
   outline-offset: 2px;
 }
 
-/* One top-aligned column.
-   Height: 100vh is what a phone reports as the FULL screen — the tallest
-   the viewport ever gets, ignoring the address bar that overlaps the
-   bottom. On its own it lets the bar cover the last control (the mode
-   toggle). 100dvh is the "dynamic" height: the space actually visible
-   right now, the bar's height subtracted. Newer browsers take the second
-   line; older ones that don't know dvh fall back to the first, no worse
-   off than before — a two-line fallback, the older unit then the newer. */
+/* Height: 100vh is the FULL screen — the tallest the viewport ever gets,
+   bar retracted — so alone it lets the bar cover the bottom control. 100svh
+   is the SMALL viewport: the smallest the viewport gets, bar shown. As a
+   min-height floor it guarantees the column fits inside the currently-visible
+   viewport in every bar state (toggle never trapped), and — unlike dvh — its
+   value doesn't change as the bar animates, so scrolling never reflow-jumps.
+   min-height (not height) lets taller content grow and scroll. Older browsers
+   that don't know svh fall back to the first line, no worse off than before. */
 /* Alignment: pack from the top (flex-start), not centred.
    The content is now just SHORTER than a phone viewport, so centring
    split the small leftover evenly above and below — and the slice below
