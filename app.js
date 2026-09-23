@@ -43,6 +43,23 @@ const CONFIG = {
   dataVersion: '20'
 };
 
+/* --- Where the last session is remembered ---
+   localStorage is the browser's per-site key-value store; unlike the variables
+   in `state` (wiped on unload — the reason the app forgot) it survives a close.
+   We write the whole resumable session here after every change and read it back
+   on startup.
+
+   Two rules make it robust:
+     • The key is namespaced ('nekudot:...') because every repo you publish under
+       <you>.github.io shares ONE origin, so a bare key like 'state' could collide
+       with another app's store.
+     • STATE_SCHEMA versions the SHAPE we store. Bump it whenever that shape
+       changes and older, incompatible saves are ignored instead of crashing the
+       restore — which is exactly why it reads 2 now that the save grew from "just
+       the settings" to "the entire session". */
+const STORAGE_KEY = 'nekudot:state';
+const STATE_SCHEMA = 2;
+
 /* --- State ---
    One source of truth for "which card": an ORDER (list of card positions)
    plus a POSITION pointer. The card on screen is cards[order[position]].
@@ -79,10 +96,23 @@ async function init() {
     state.groups = groups;
     state.uiStrings = uiStrings;
 
+    // Restore last session: loadState() applies the saved settings (language,
+    // mode, filters) and hands back the saved session object (or null).
+    const saved = loadState();
+
     buildChips();          // one button per group, from the data
     buildLevelMenu();      // one line per level PRESENT in the data
     buildLanguageMenu();   // one line per language the app offers (Slice 5)
-    buildOrder();          // builds the filtered order AND starts the first pass
+
+    // If the saved session rebuilds cleanly, resume it EXACTLY — same deck order,
+    // same visited history, same position, same progress. restoreSession() returns
+    // false on any integrity problem (a card id that no longer exists, a pointer
+    // out of range), and only THEN do we deal a fresh deck for the restored
+    // filters. That fallback is the safety net for a data change between sessions.
+    if (!restoreSession(saved)) {
+      buildOrder();        // fresh deck + first pass (the original startup path)
+    }
+
     applyStaticText();     // fixed labels: title, tap-hint, button words
     attachEvents();
     render();
@@ -97,6 +127,135 @@ async function loadJson(url) {
     throw new Error('Could not load ' + url + ' (HTTP ' + response.status + ')');
   }
   return response.json();
+}
+
+/* ---------------------------------------------------------------- *
+ * Session persistence — remember the whole session across a close
+ * ---------------------------------------------------------------- */
+
+/* A card's position (its index in state.cards) from its stable id, or -1.
+   Positions are what the deck and trail run on, but a position only means
+   something while the data is unchanged — so we STORE ids and rebuild the
+   positions here on load. */
+function positionOfCard(cardId) {
+  return state.cards.findIndex(function (c) { return c.id === cardId; });
+}
+
+/* Save the ENTIRE resumable session. Two things can't go into JSON as-is: a
+   Set (JSON has no Set type) and a card POSITION (an index that's only valid
+   while the data is unchanged). So Sets become arrays, and every position — in
+   the deck order and in the visited trail — is written as its card id. Wrapped
+   in try/catch so a blocked or full store (e.g. private browsing) degrades to
+   "runs without memory" instead of throwing. Called from render(), so the save
+   is always current — the reliable choice on mobile, where a backgrounded tab
+   can be killed without ever firing an "unload" we could catch. */
+function saveState() {
+  try {
+    const idOf = function (pos) { const c = state.cards[pos]; return c ? c.id : null; };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      v: STATE_SCHEMA,
+      // settings
+      lang: state.lang,
+      mode: state.mode,
+      groups: Array.from(state.selectedGroups),
+      levels: Array.from(state.selectedLevels),
+      // the exact session
+      order: state.order.map(idOf),          // the deck ordering (a shuffle permutation, or the in-order list) as ids
+      lapCursor: state.lapCursor,            // how far into this lap we've dealt
+      trail: state.trail.map(function (e) {  // the visited history, spanning laps, as {id, n, m}
+        return { id: idOf(e.card), n: e.n, m: e.m };
+      }),
+      trailPos: state.trailPos,              // which visited card is on screen
+      revealed: state.revealed,              // was the answer showing?
+      seen: Array.from(state.seen)           // ids seen this lap → drives the progress bar
+    }));
+  } catch (e) {
+    /* storage unavailable or full — carry on without persistence */
+  }
+}
+
+/* Read the saved blob back, schema-check it, and apply the SETTINGS (validated).
+   Returns the whole saved object for restoreSession() to rebuild from, or null
+   when there's nothing usable (first run, corrupt, or an older schema — a v1
+   save lands here and is ignored). Runs after the JSON loads (it needs the real
+   levels/groups to validate against) and before the deck is built (which must
+   see the restored language, mode and filters). */
+function loadState() {
+  let data;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;                       // first run — nothing saved yet
+    data = JSON.parse(raw);
+  } catch (e) {
+    return null;                                 // unreadable — use defaults
+  }
+  if (!data || data.v !== STATE_SCHEMA) return null;   // unknown/old shape — ignore
+
+  const langs = LANGUAGES.map(function (l) { return l.code; });
+  if (langs.indexOf(data.lang) !== -1) {
+    state.lang = data.lang;
+    document.documentElement.lang = data.lang;   // keep <html lang> + :lang() CSS honest from first paint
+  }
+  if (data.mode === 'inorder' || data.mode === 'shuffle') {
+    state.mode = data.mode;
+  }
+  if (Array.isArray(data.levels)) {              // keep only levels that still exist
+    const real = new Set(availableLevels());
+    state.selectedLevels = new Set(data.levels.filter(function (n) { return real.has(n); }));
+  }
+  if (Array.isArray(data.groups)) {              // keep only group ids that still exist
+    state.selectedGroups = new Set(data.groups.filter(function (id) { return groupById(id); }));
+  }
+
+  return data;   // hand the whole thing to restoreSession()
+}
+
+/* Rebuild the exact session — deck order, visited history, position, reveal,
+   progress — from the saved ids. ALL-OR-NOTHING: if any id no longer exists or
+   any pointer is out of range, it restores NOTHING and returns false, so the
+   caller deals a clean fresh deck instead. A half-rebuilt session is worse than
+   a fresh one, and this is the "never trust persisted data" guard doing the real
+   work — it's what stops a data change between sessions from resurrecting a
+   broken deck. */
+function restoreSession(data) {
+  if (!data || !Array.isArray(data.order) || !Array.isArray(data.trail)) return false;
+  if (data.order.length === 0 || data.trail.length === 0) return false;   // nothing to resume onto
+
+  // deck order: ids -> positions (one missing id fails the whole restore)
+  const order = [];
+  for (let i = 0; i < data.order.length; i++) {
+    const pos = positionOfCard(data.order[i]);
+    if (pos === -1) return false;
+    order.push(pos);
+  }
+
+  // visited history: {id,n,m} -> {card:position,n,m}
+  const trail = [];
+  for (let i = 0; i < data.trail.length; i++) {
+    const e = data.trail[i];
+    if (!e || typeof e.id !== 'string') return false;
+    const pos = positionOfCard(e.id);
+    if (pos === -1) return false;
+    trail.push({ card: pos, n: e.n, m: e.m });
+  }
+
+  // pointers must land inside the lists we just rebuilt
+  if (!Number.isInteger(data.lapCursor) || data.lapCursor < 0 || data.lapCursor >= order.length) return false;
+  if (!Number.isInteger(data.trailPos) || data.trailPos < 0 || data.trailPos >= trail.length) return false;
+
+  state.order = order;
+  state.lapCursor = data.lapCursor;
+  state.trail = trail;
+  state.trailPos = data.trailPos;
+  state.revealed = (data.revealed === true);
+
+  const realIds = new Set(state.cards.map(function (c) { return c.id; }));
+  state.seen = new Set(Array.isArray(data.seen)
+    ? data.seen.filter(function (id) { return realIds.has(id); })
+    : []);
+
+  return true;
 }
 
 /* Interface string by language-neutral ID, with an English fallback. */
@@ -366,6 +525,8 @@ function render() {
     renderProgress();
   }
   renderControls();
+
+  saveState();   // persist the whole session after every change (see saveState)
 }
 
 /* Build one button per group, plus the "All" chip in front of them.
